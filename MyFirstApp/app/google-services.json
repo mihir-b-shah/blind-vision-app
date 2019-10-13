@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "524491727110",
+    "firebase_url": "https://blind-vision-243516.firebaseio.com",
+    "project_id": "blind-vision-243516",
+    "storage_bucket": "blind-vision-243516.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:524491727110:android:f363407d1d70e5c1",
+        "android_client_info": {
+          "package_name": "com.example.myfirstapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "524491727110-1nlas7334jgf649m0sa5tln054arou3r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpECOLKtj0-y34TJRJhSqoaRZoxgGBYds"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "524491727110-1nlas7334jgf649m0sa5tln054arou3r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
