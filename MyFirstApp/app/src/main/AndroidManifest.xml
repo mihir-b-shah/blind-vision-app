@@ -74,7 +74,7 @@
             android:label="@string/title_activity_photo"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".CallAPI"
+            android:name=".CallGAPI"
             android:label="@string/title_activity_call_api"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity

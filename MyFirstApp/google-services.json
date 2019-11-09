@@ -1,52 +1,37 @@
 {
   "project_info": {
-    "project_number": "908855900605",
-    "firebase_url": "https://myfirstapp-180ec.firebaseio.com",
-    "project_id": "myfirstapp-180ec",
-    "storage_bucket": "myfirstapp-180ec.appspot.com"
+    "project_number": "524491727110",
+    "firebase_url": "https://blind-vision-243516.firebaseio.com",
+    "project_id": "blind-vision-243516",
+    "storage_bucket": "blind-vision-243516.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:908855900605:android:f363407d1d70e5c1",
+        "mobilesdk_app_id": "1:524491727110:android:f363407d1d70e5c1",
         "android_client_info": {
           "package_name": "com.example.myfirstapp"
         }
       },
       "oauth_client": [
         {
-          "client_id": "908855900605-691v142n7lr2arldjtd9vgukg05q1tdn.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.myfirstapp",
-            "certificate_hash": "887c4843e05fbe199d13e1d01404d3c496e12d46"
-          }
-        },
-        {
-          "client_id": "908855900605-t8d93kpkmc9af76ptbcm0cdhu2525qss.apps.googleusercontent.com",
+          "client_id": "524491727110-1nlas7334jgf649m0sa5tln054arou3r.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCmBgIM4JfeY_BKHvKIi5I3n7hnbwXSIUc"
+          "current_key": "AIzaSyCf4LzbnNGHhpKoe9MtgysIK28Z1GJroPY"
         }
       ],
       "services": {
-        "analytics_service": {
-          "status": 1
-        },
         "appinvite_service": {
-          "status": 2,
           "other_platform_oauth_client": [
             {
-              "client_id": "908855900605-t8d93kpkmc9af76ptbcm0cdhu2525qss.apps.googleusercontent.com",
+              "client_id": "524491727110-1nlas7334jgf649m0sa5tln054arou3r.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
-        },
-        "ads_service": {
-          "status": 2
         }
       }
     }

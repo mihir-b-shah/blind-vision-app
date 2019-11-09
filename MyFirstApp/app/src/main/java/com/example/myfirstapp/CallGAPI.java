@@ -18,7 +18,7 @@ import java.util.*;
 Need to change confidence values.
  */
 
-public class CallAPI extends AppCompatActivity {
+public class CallGAPI extends AppCompatActivity {
     private List<AnnotateImageResponse> annotations;
     private Session session;
     private String cachename;
@@ -93,7 +93,7 @@ public class CallAPI extends AppCompatActivity {
         @Override
         protected List<AnnotateImageResponse> doInBackground(String... params) {
             Vision.Builder vb = new Vision.Builder(new NetHttpTransport(), new AndroidJsonFactory(), null);
-            vb.setVisionRequestInitializer(new VisionRequestInitializer("AIzaSyC38GJfPS4G8eeY3N99QSxyQj9j3T7RRYk"));
+            vb.setVisionRequestInitializer(new VisionRequestInitializer("AIzaSyDtDkwucsAu5udmyCfBbtn3vnTRj5gJ8GY"));
             vb.setApplicationName("Blind Vision");
 
             Vision vision = vb.build();
@@ -143,16 +143,16 @@ public class CallAPI extends AppCompatActivity {
         @Override
         protected void onPostExecute(List<AnnotateImageResponse> result) {
             System.out.println("Got to onPostExecute");
-            CallAPI.this.annotations = result;
-            CallAPI.this.convert();
+            CallGAPI.this.annotations = result;
+            CallGAPI.this.convert();
             System.out.println("Right before serialization!");
             if(cachename != null) {
                 new Dump().execute(createImageFile(cachename));
             } else {
                 Intent out = new Intent();
                 out.putExtra("list-annotation", session);
-                CallAPI.this.setResult(Activity.RESULT_OK, out);
-                CallAPI.this.finish();
+                CallGAPI.this.setResult(Activity.RESULT_OK, out);
+                CallGAPI.this.finish();
             }
         }
     }
@@ -178,8 +178,8 @@ public class CallAPI extends AppCompatActivity {
             if(res == 0) {
                 Intent out = new Intent();
                 out.putExtra("list-annotation", session);
-                CallAPI.this.setResult(Activity.RESULT_OK, out);
-                CallAPI.this.finish();
+                CallGAPI.this.setResult(Activity.RESULT_OK, out);
+                CallGAPI.this.finish();
             }
 
         }
@@ -224,14 +224,14 @@ public class CallAPI extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Session result) {
-            CallAPI.this.session = result;
+            CallGAPI.this.session = result;
             if(cachename != null) {
                 new Dump().execute(createImageFile(cachename));
             } else {
                 Intent out = new Intent();
                 out.putExtra("list-annotation", session);
-                CallAPI.this.setResult(Activity.RESULT_OK, out);
-                CallAPI.this.finish();
+                CallGAPI.this.setResult(Activity.RESULT_OK, out);
+                CallGAPI.this.finish();
             }
         }
     }

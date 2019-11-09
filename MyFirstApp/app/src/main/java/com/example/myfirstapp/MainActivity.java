@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case 2:
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
-                    Intent api = new Intent(getApplicationContext(), CallAPI.class);
+                    Intent api = new Intent(getApplicationContext(), CallGAPI.class);
                     api.putExtra("photo-path", mCurrentPhotoPath);
                     api.putExtra("gen", false);
                     api.putExtra("cache", true);
