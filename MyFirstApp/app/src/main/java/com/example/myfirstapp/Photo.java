@@ -23,7 +23,6 @@ public class Photo extends AppCompatActivity {
     public static void adjust(Annotation annot) {
         // 1920 vs 1080 bitmap size
         List<Vertex> vertices = annot.b.getVertices();
-        Camera.
     }
 
     /*

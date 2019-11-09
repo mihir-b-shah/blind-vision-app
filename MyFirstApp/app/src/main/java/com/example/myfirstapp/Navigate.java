@@ -1,29 +1,36 @@
 package com.example.myfirstapp;
 
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.hardware.*;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.*;
+
+import static java.lang.Math.*;
 
 public class Navigate extends AppCompatActivity implements SensorEventListener {
 
     public static int WIDTH;
     public static int HEIGHT;
     public static int X;
+    private boolean calibr;
+    private float dir_init;
     public static int Y;
     public static float[] init_mat;
     private SensorManager mSensorManager;
     private Sensor[] sensors;
     private float[][] data;
     private float[] orientationValues;
+    private float[] xyz_vect;
     private Display mDisplay;
-    private static final float VALUE_DRIFT = 0.05f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_navigate);
+        xyz_vect = new float[3];
         WIDTH = getIntent().getIntExtra("W", -1);
         HEIGHT = getIntent().getIntExtra("H", -1);
         X = getIntent().getIntExtra("X", -1);
@@ -78,9 +85,14 @@ public class Navigate extends AppCompatActivity implements SensorEventListener {
                 return;
         }
 
+        if(data[0] == null || data[1] == null) {
+            return;
+        }
+
         float[] rotationMatrix = new float[9];
+        float[] inclination = new float[9];
         boolean rotationOK = SensorManager.getRotationMatrix(rotationMatrix,
-                null, data[0], data[1]);
+                inclination, data[0], data[1]);
 
         float[] rotationMatrixAdjusted = new float[9];
         switch (mDisplay.getRotation()) {
@@ -113,11 +125,24 @@ public class Navigate extends AppCompatActivity implements SensorEventListener {
         float pitch = orientationValues[1];
         float roll = orientationValues[2];
 
-        if (Math.abs(pitch) < VALUE_DRIFT)
-            pitch = 0;
+        if(!calibr) {
+            dir_init = azimuth;
+            calibr = true;
+        }
 
-        if (Math.abs(roll) < VALUE_DRIFT)
-            roll = 0;
+        System.out.printf("<%.2f, %.2f, %.2f>%n",
+                azimuth, pitch, roll);
+        /*
+        gen_xyz_vect(xyz_vect, azimuth, pitch, roll);
+        System.out.printf("<%.2f, %.2f, %.2f>%n",
+                xyz_vect[0], xyz_vect[1], xyz_vect[2]); */
+    }
+
+    public void gen_xyz_vect(float[] fill, float a, float p, float r) {
+        a -= dir_init;
+        fill[0] = (float) (cos(a)*sin(r)-sin(a)*sin(p)*cos(r));
+        fill[1] = (float) (-sin(a)*sin(r)-cos(a)*sin(p)*cos(r));
+        fill[2] = (float) (cos(p)*cos(r));
     }
 
     @Override

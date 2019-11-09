@@ -8,10 +8,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
-import com.google.api.services.vision.v1.model.BoundingPoly;
-import com.google.api.services.vision.v1.model.Vertex;
-
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /*
 1. Should manage the main sequence UI.
@@ -83,19 +81,34 @@ public class MainActivity extends AppCompatActivity {
                     Intent api = new Intent(getApplicationContext(), CallAPI.class);
                     api.putExtra("photo-path", mCurrentPhotoPath);
                     api.putExtra("gen", false);
+                    api.putExtra("cache", true);
                     startActivityForResult(api, 3);
                     break;
                 case 3:
                     annotations = (Annotation[]) data.getSerializableExtra("list-annotation");
-                    System.out.println("ANNOTATIONS: " + annotations);
-                    Intent descr = new Intent(getApplicationContext(), WordInput.class);
-                    descr.putExtra("question", "Describe the object using adjectives.");
-                    startActivityForResult(descr, 4);
-                case 4:
-                    adjectives = data.getStringExtra("spk-text");
-                    Annotation fin = Converge.converge(annotations, spkText, adjectives);
-                    Photo.adjust(fin);
+                    System.out.println("Annotations: " + Arrays.toString(annotations));
+                    Intent sp = new Intent(getApplicationContext(), SpellCheck.class);
+                    ArrayList<String> copy = new ArrayList<>();
+
+                    for(Annotation a: annotations) {
+                        if(a.t.equals("t")) {
+                            copy.add(a.d);
+                        }
+                    }
+                    sp.putExtra("input_data", copy);
+                    startActivityForResult(sp, 4);
+                    // System.out.println("ANNOTATIONS: " + annotations);
                     break;
+                case 4:
+                    String[] fixes = data.getStringArrayExtra("corrections");
+                    final int lim = fixes.length;
+                    int ctr = 0;
+                    for(int i = 0; i<lim; ++i) {
+                        if(annotations[i].t.equals("t")) {
+                            annotations[i].d = fixes[ctr++];
+                        }
+                    }
+                    System.out.println("Fixed annotations: " + Arrays.toString(annotations));
                 case 10:
                     System.err.println("mudhaniu the large!");
             }

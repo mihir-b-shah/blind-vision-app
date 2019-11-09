@@ -1,4 +1,0 @@
-Project to-do
-
-1. Get the arduino-android connection to work.
-2. Implement the stuff in java or c++ for speed.

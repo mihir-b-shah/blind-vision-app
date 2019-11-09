@@ -44,6 +44,11 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         d = sb.toString();
     }
 
+    // default constructor
+    public Annotation() {
+
+    }
+
     public Annotation(String tag, String descr, float conf, BoundingPoly bp) {
         t = tag;
         d = descr;
@@ -90,8 +95,9 @@ public class Annotation implements Serializable,Comparable<Annotation> {
     }
 
     // makes serializing methods more efficient.
-    private void writeObject(ObjectOutputStream out) throws IOException {
+    public void writeObject(ObjectOutputStream out) throws IOException {
 
+        System.out.println("serialization write start");
         out.writeInt(t.length());
         out.writeChars(t);
         out.writeInt(d.length());
@@ -112,13 +118,16 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         }
 
         out.writeChar('\0');
+        System.out.println("serialization write end!");
     }
 
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+    public void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        System.out.println("Serialization read start");
         t = getChars(in);
         d = getChars(in);
         c = in.readFloat();
         b = getBP(in);
+        System.out.println("Serialization read end!");
     }
 
     private BoundingPoly getBP(ObjectInputStream in) throws IOException {
@@ -141,7 +150,7 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         return bp;
     }
 
-    private String getChars(ObjectInputStream in) throws IOException {
+    public static String getChars(ObjectInputStream in) throws IOException {
         int t_len = in.readInt();
         char[] t_chars = new char[t_len];
 

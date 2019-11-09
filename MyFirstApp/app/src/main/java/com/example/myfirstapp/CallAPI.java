@@ -21,18 +21,25 @@ Need to change confidence values.
 public class CallAPI extends AppCompatActivity {
     private List<AnnotateImageResponse> annotations;
     private Annotation[] array;
+    private String path;
+    private boolean cont;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_call_api);
-        String path = getIntent().getStringExtra("photo-path");
-        boolean cont = getIntent().getBooleanExtra("gen",false);
-        if(cont) new Request().execute(path);
-        else new Read().execute();
+        path = getIntent().getStringExtra("photo-path");
+        cont = getIntent().getBooleanExtra("gen", true);
+        if(cont) {
+            new Request().execute(path);
+        } else {
+            new Read().execute();
+        }
     }
 
-    private Annotation[] convert() {
+    private
+
+    private void convert() {
         List<Annotation> newAnnotations = new ArrayList<>();
 
         if(annotations != null)
@@ -62,8 +69,7 @@ public class CallAPI extends AppCompatActivity {
 
         Annotation[] out = new Annotation[newAnnotations.size()];
         out = newAnnotations.toArray(out);
-        out = array;
-        return out;
+        array = out;
     }
 
     private class Request extends AsyncTask<String, Integer, List<AnnotateImageResponse>> {
@@ -99,7 +105,7 @@ public class CallAPI extends AppCompatActivity {
                 img.encodeContent(data);
                 AnnotateImageRequest request = new AnnotateImageRequest();
 
-                  request.setImage(img);
+                request.setImage(img);
                 request.setFeatures(Arrays.asList(df, df2, df3));
                 BatchAnnotateImagesRequest batchRequest = new BatchAnnotateImagesRequest();
                 batchRequest.setRequests(Arrays.asList(request));
@@ -120,7 +126,7 @@ public class CallAPI extends AppCompatActivity {
 
         private String createImageFile(String prefix) {
             try {
-                String imageFileName = String.format("%s REST_RESPONSE", prefix);
+                String imageFileName = String.format("REST_RESPONSE_%s", prefix);
                 File storageDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
                 File text = File.createTempFile(
                         imageFileName,  /* prefix */
@@ -136,8 +142,14 @@ public class CallAPI extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(List<AnnotateImageResponse> result) {
+            System.out.println("Got to onPostExecute");
             CallAPI.this.annotations = result;
-            Annotation[] array = CallAPI.this.convert();
+            CallAPI.this.convert();
+            Intent out = new Intent();
+            System.out.println("Right before serialization!");
+            out.putExtra("list-annotation", array);
+            CallAPI.this.setResult(Activity.RESULT_OK, out);
+            CallAPI.this.finish();
             new Dump().execute(createImageFile(""));
         }
     }
@@ -149,6 +161,7 @@ public class CallAPI extends AppCompatActivity {
             String path = strings[0];
             try {
                 BufferedWriter out = new BufferedWriter(new FileWriter(path));
+                out.write(path+"\n");
                 out.write(array.length);
                 out.write('\n');
                 for(Annotation ant: array) {
@@ -191,13 +204,14 @@ public class CallAPI extends AppCompatActivity {
     }
 
     // Provides functionality to read and construct te
-    private class Read extends AsyncTask<String, Void, Annotation[]> {
+    private class Read extends AsyncTask<String, Void, Session> {
 
         @Override
-        protected Annotation[] doInBackground(String... strings) {
-            String path = strings[0];
+        protected Session doInBackground(String... strings) {
+            String filepath = strings[0];
             try {
-                BufferedReader br = new BufferedReader(new FileReader(path));
+                BufferedReader br = new BufferedReader(new FileReader(filepath));
+                String imagepath = br.readLine();
                 int next = Integer.parseInt(br.readLine());
                 Annotation[] out = new Annotation[next];
 
@@ -221,14 +235,14 @@ public class CallAPI extends AppCompatActivity {
                     bp.setVertices(vertices);
                     out[i] = new Annotation(t,d,c,bp);
                 }
-                return out;
+                return new Session(out, imagepath);
 
             } catch (IOException e) {}
             return null;
         }
 
         @Override
-        protected void onPostExecute(Annotation[] result) {
+        protected void onPostExecute(Session result) {
             Intent out = new Intent();
             out.putExtra("list-annotation", result);
             CallAPI.this.setResult(Activity.RESULT_OK, out);

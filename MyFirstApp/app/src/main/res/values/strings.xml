@@ -14,4 +14,5 @@
     <string name="title_activity_sensor_data">SensorData</string>
     <string name="title_activity_arduino_sensor">ArduinoSensor</string>
     <string name="title_activity_arduino_sensor_debug">ArduinoSensorDebug</string>
+    <string name="title_activity_spell_check">SpellCheck</string>
 </resources>
