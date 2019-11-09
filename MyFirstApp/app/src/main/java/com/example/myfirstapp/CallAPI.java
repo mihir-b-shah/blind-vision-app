@@ -20,24 +20,25 @@ Need to change confidence values.
 
 public class CallAPI extends AppCompatActivity {
     private List<AnnotateImageResponse> annotations;
-    private Annotation[] array;
-    private String path;
+    private Session session;
     private boolean cont;
+    private boolean cache;
+    private String imagepath;
+    private String filepath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_call_api);
-        path = getIntent().getStringExtra("photo-path");
+        imagepath = getIntent().getStringExtra("photo-path");
         cont = getIntent().getBooleanExtra("gen", true);
+        cache = getIntent().getBooleanExtra("cache", false);
         if(cont) {
-            new Request().execute(path);
+            new Request().execute(imagepath);
         } else {
             new Read().execute();
         }
     }
-
-    private
 
     private void convert() {
         List<Annotation> newAnnotations = new ArrayList<>();
@@ -69,7 +70,23 @@ public class CallAPI extends AppCompatActivity {
 
         Annotation[] out = new Annotation[newAnnotations.size()];
         out = newAnnotations.toArray(out);
-        array = out;
+        session = new Session(out, imagepath);
+    }
+
+    private String createImageFile(String prefix) {
+        try {
+            String imageFileName = String.format("REST_RESPONSE_%s", prefix);
+            File storageDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+            File text = File.createTempFile(
+                    imageFileName,  /* prefix */
+                    ".txt",         /* suffix */
+                    storageDir      /* directory */
+            );
+
+            // Save a file: path for use with ACTION_VIEW intents
+            return text.getAbsolutePath();
+        } catch(IOException e) {}
+        return null;
     }
 
     private class Request extends AsyncTask<String, Integer, List<AnnotateImageResponse>> {
@@ -124,33 +141,20 @@ public class CallAPI extends AppCompatActivity {
             return annotations;
         }
 
-        private String createImageFile(String prefix) {
-            try {
-                String imageFileName = String.format("REST_RESPONSE_%s", prefix);
-                File storageDir = getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-                File text = File.createTempFile(
-                        imageFileName,  /* prefix */
-                        ".txt",         /* suffix */
-                        storageDir      /* directory */
-                );
-
-                // Save a file: path for use with ACTION_VIEW intents
-                return text.getAbsolutePath();
-            } catch(IOException e) {}
-            return null;
-        }
-
         @Override
         protected void onPostExecute(List<AnnotateImageResponse> result) {
             System.out.println("Got to onPostExecute");
             CallAPI.this.annotations = result;
             CallAPI.this.convert();
-            Intent out = new Intent();
             System.out.println("Right before serialization!");
-            out.putExtra("list-annotation", array);
-            CallAPI.this.setResult(Activity.RESULT_OK, out);
-            CallAPI.this.finish();
-            new Dump().execute(createImageFile(""));
+            if(cache) {
+                new Dump().execute(createImageFile(""));
+            } else {
+                Intent out = new Intent();
+                out.putExtra("list-annotation", session);
+                CallAPI.this.setResult(Activity.RESULT_OK, out);
+                CallAPI.this.finish();
+            }
         }
     }
 
@@ -159,32 +163,11 @@ public class CallAPI extends AppCompatActivity {
         @Override
         protected Integer doInBackground(String... strings) {
             String path = strings[0];
+            session.set_srcfile(path);
             try {
                 BufferedWriter out = new BufferedWriter(new FileWriter(path));
-                out.write(path+"\n");
-                out.write(array.length);
-                out.write('\n');
-                for(Annotation ant: array) {
-                    out.write(ant.t,0,ant.t != null ? 1 : 0);
-                    out.write('\n');
-                    out.write(ant.d,0,ant.d != null ? ant.d.length() : 0);
-                    out.write('\n');
-                    String wr = ant.c != -1 ? Float.toString(ant.c) : "";
-                    out.write(wr,0,wr.length());
-                    out.write('\n');
-                    List<Vertex> vertices = ant.b.getVertices();
-                    if(vertices != null) {
-                        out.write(vertices.size());
-                        out.write('\n');
-                        for (Vertex v : vertices) {
-                            out.write(v.getX());
-                            out.write('\n');
-                            out.write(v.getY());
-                            out.write('\n');
-                        }
-                    }
-                }
-                out.write('\0');
+                CharBuffer buf = session.outform();
+                out.write(buf.get_chars(), 0, buf.size());
                 out.flush();
                 out.close();
                 return 0;
@@ -195,7 +178,7 @@ public class CallAPI extends AppCompatActivity {
         protected void onPostExecute(Integer res) {
             if(res == 0) {
                 Intent out = new Intent();
-                out.putExtra("list-annotation", array);
+                out.putExtra("list-annotation", session);
                 CallAPI.this.setResult(Activity.RESULT_OK, out);
                 CallAPI.this.finish();
             }
@@ -208,10 +191,10 @@ public class CallAPI extends AppCompatActivity {
 
         @Override
         protected Session doInBackground(String... strings) {
-            String filepath = strings[0];
+            filepath = strings[0];
             try {
                 BufferedReader br = new BufferedReader(new FileReader(filepath));
-                String imagepath = br.readLine();
+                imagepath = br.readLine();
                 int next = Integer.parseInt(br.readLine());
                 Annotation[] out = new Annotation[next];
 
@@ -235,7 +218,7 @@ public class CallAPI extends AppCompatActivity {
                     bp.setVertices(vertices);
                     out[i] = new Annotation(t,d,c,bp);
                 }
-                return new Session(out, imagepath);
+                return new Session(out, imagepath, filepath);
 
             } catch (IOException e) {}
             return null;
@@ -243,10 +226,15 @@ public class CallAPI extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(Session result) {
-            Intent out = new Intent();
-            out.putExtra("list-annotation", result);
-            CallAPI.this.setResult(Activity.RESULT_OK, out);
-            CallAPI.this.finish();
+            CallAPI.this.session = result;
+            if(cache) {
+                new Dump().execute(createImageFile(""));
+            } else {
+                Intent out = new Intent();
+                out.putExtra("list-annotation", session);
+                CallAPI.this.setResult(Activity.RESULT_OK, out);
+                CallAPI.this.finish();
+            }
         }
     }
 }
