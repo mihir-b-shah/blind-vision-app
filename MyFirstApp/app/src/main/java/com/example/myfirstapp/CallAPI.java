@@ -21,8 +21,7 @@ Need to change confidence values.
 public class CallAPI extends AppCompatActivity {
     private List<AnnotateImageResponse> annotations;
     private Session session;
-    private boolean cont;
-    private boolean cache;
+    private String cachename;
     private String imagepath;
     private String filepath;
 
@@ -31,12 +30,13 @@ public class CallAPI extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_call_api);
         imagepath = getIntent().getStringExtra("photo-path");
-        cont = getIntent().getBooleanExtra("gen", true);
-        cache = getIntent().getBooleanExtra("cache", false);
+        filepath = getIntent().getStringExtra("file-path");
+        boolean cont = getIntent().getBooleanExtra("gen", true);
+        cachename = getIntent().getStringExtra("cache");
         if(cont) {
             new Request().execute(imagepath);
         } else {
-            new Read().execute();
+            new Read().execute(cachename);
         }
     }
 
@@ -106,7 +106,6 @@ public class CallAPI extends AppCompatActivity {
 
             /*
             params[0] = absolute path of the photo
-            params[1] = bitmap
             */
 
             try {
@@ -147,8 +146,8 @@ public class CallAPI extends AppCompatActivity {
             CallAPI.this.annotations = result;
             CallAPI.this.convert();
             System.out.println("Right before serialization!");
-            if(cache) {
-                new Dump().execute(createImageFile(""));
+            if(cachename != null) {
+                new Dump().execute(createImageFile(cachename));
             } else {
                 Intent out = new Intent();
                 out.putExtra("list-annotation", session);
@@ -191,7 +190,6 @@ public class CallAPI extends AppCompatActivity {
 
         @Override
         protected Session doInBackground(String... strings) {
-            filepath = strings[0];
             try {
                 BufferedReader br = new BufferedReader(new FileReader(filepath));
                 imagepath = br.readLine();
@@ -227,8 +225,8 @@ public class CallAPI extends AppCompatActivity {
         @Override
         protected void onPostExecute(Session result) {
             CallAPI.this.session = result;
-            if(cache) {
-                new Dump().execute(createImageFile(""));
+            if(cachename != null) {
+                new Dump().execute(createImageFile(cachename));
             } else {
                 Intent out = new Intent();
                 out.putExtra("list-annotation", session);
