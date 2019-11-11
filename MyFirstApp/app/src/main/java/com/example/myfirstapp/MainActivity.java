@@ -18,7 +18,7 @@ import java.util.Arrays;
 public class MainActivity extends AppCompatActivity {
 
     public static final String EXTRA_MESSAGE = "com.example.myfirstapp.MESSAGE";
-    private Annotation[] annotations;
+    private Session session;
     private String spkText;
     private String adjectives;
     private String mCurrentPhotoPath;
@@ -80,15 +80,14 @@ public class MainActivity extends AppCompatActivity {
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
                     Intent api = new Intent(getApplicationContext(), CallGAPI.class);
                     api.putExtra("photo-path", mCurrentPhotoPath);
-                    api.putExtra("file-path", "test");
-                    api.putExtra("gen", false);
-                    api.putExtra("cache", true);
+                    api.putExtra("file-path", (String) null);
+                    api.putExtra("cache", "NEXT");
                     startActivityForResult(api, 3);
                     break;
                 case 3:
-                    annotations = (Annotation[]) data.getSerializableExtra("list-annotation");
-                    System.out.println("Annotations: " + Arrays.toString(annotations));
-                    Intent sp = new Intent(getApplicationContext(), SpellCheck.class);
+                    session = (Session) data.getSerializableExtra("list-annotation");
+                    System.out.println("Annotations: " + session);
+                    /* Intent sp = new Intent(getApplicationContext(), SpellCheck.class);
                     ArrayList<String> copy = new ArrayList<>();
 
                     for(Annotation a: annotations) {
@@ -98,18 +97,18 @@ public class MainActivity extends AppCompatActivity {
                     }
                     sp.putExtra("input_data", copy);
                     startActivityForResult(sp, 4);
-                    // System.out.println("ANNOTATIONS: " + annotations);
+                    // System.out.println("ANNOTATIONS: " + annotations); */
                     break;
                 case 4:
                     String[] fixes = data.getStringArrayExtra("corrections");
                     final int lim = fixes.length;
                     int ctr = 0;
                     for(int i = 0; i<lim; ++i) {
-                        if(annotations[i].t.equals("t")) {
-                            annotations[i].d = fixes[ctr++];
+                        if(session.get_annotation(i).t.equals("t")) {
+                            session.get_annotation(i).d = fixes[ctr++];
                         }
                     }
-                    System.out.println("Fixed annotations: " + Arrays.toString(annotations));
+                    System.out.println("Fixed annotations: " + session);
                 case 10:
                     System.err.println("mudhaniu the large!");
             }

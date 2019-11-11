@@ -11,10 +11,10 @@ public class CharBuffer {
     }
 
     public CharBuffer(int N) {
-        if(N > 1_000) {
+        if(N > 10_000) {
             throw new BufferOverflowException();
         }
-        buf = new char[Math.min(N,1_000)];
+        buf = new char[N];
     }
 
     public int size() {
@@ -26,8 +26,17 @@ public class CharBuffer {
     }
 
     public void appendln(int c) {
-        range_check(2);
-        buf[pos++] = (char) (c+'0');
+        char[] buffer = new char[5];
+        int div = 0;
+        int ctr = buffer.length;
+        while(c > 0) {
+            div = c/=10;
+            buffer[--ctr] = (char) (c-10*div+'0');
+        }
+        final int lim = 6-ctr;
+        range_check(lim);
+        System.arraycopy(buffer, ctr, buf, pos, lim-1);
+        pos+=lim;
         buf[pos++] = '\n';
     }
 
@@ -52,11 +61,11 @@ public class CharBuffer {
 
     // lets hope this inlines... noooooo
     private final void range_check(int lim) {
-        if(lim>Math.min(pos<<3,1_000)) {
+        if(lim>10_000) {
             throw new BufferOverflowException();
         }
         if(buf.length < pos+lim) {
-            char[] aux = new char[Math.max(pos<<1,(pos+lim)<<1)];
+            char[] aux = new char[(pos+lim) << 1];
             System.arraycopy(buf,0,aux,0,pos);
             buf = aux;
         }

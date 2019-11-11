@@ -97,66 +97,52 @@ public class Annotation implements Serializable,Comparable<Annotation> {
     // makes serializing methods more efficient.
     public void writeObject(ObjectOutputStream out) throws IOException {
 
-        System.out.println("serialization write start");
-        out.writeInt(t.length());
-        out.writeChars(t);
-        out.writeInt(d.length());
-        out.writeChars(d);
+        out.writeUTF(t);
+        out.writeUTF(d);
         out.writeFloat(c);
 
         // Avoids expensive gc eInt(t.lengtof the bounding poly.
 
         if(b != null) {
             List<Vertex> vertices = b.getVertices();
-            if(vertices != null)
-                for(Vertex v: vertices) {
-                    if(v != null && v.getX() != null && v.getY() != null) {
+            if(vertices != null) {
+                out.writeInt(vertices.size());
+                for (Vertex v : vertices) {
+                    if (v != null && v.getX() != null && v.getY() != null) {
                         out.writeInt(v.getX());
                         out.writeInt(v.getY());
                     }
                 }
-        }
+            } else {
+                out.writeInt(0);
+            }
 
-        out.writeChar('\0');
-        System.out.println("serialization write end!");
+        } else {
+            out.writeInt(0);
+        }
     }
 
     public void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        System.out.println("Serialization read start");
-        t = getChars(in);
-        d = getChars(in);
+        t = in.readUTF();
+        d = in.readUTF();
         c = in.readFloat();
         b = getBP(in);
-        System.out.println("Serialization read end!");
     }
 
     private BoundingPoly getBP(ObjectInputStream in) throws IOException {
 
         BoundingPoly bp = new BoundingPoly();
         List<Vertex> vertices = new ArrayList<>();
+        final int next = in.readInt();
 
-        int curr1;
-        try {
-            while ((curr1 = in.readInt()) != '\0') {
-                int curr2 = in.readInt();
-                Vertex v = new Vertex();
-                v.setX(curr1);
-                v.setY(curr2);
-                vertices.add(v);
-            }
-        } catch (EOFException e) {}
+        for(int i = 0; i<next; ++i) {
+            Vertex v = new Vertex();
+            v.setX(in.readInt());
+            v.setY(in.readInt());
+            vertices.add(v);
+        }
 
         bp.setVertices(vertices);
         return bp;
-    }
-
-    public static String getChars(ObjectInputStream in) throws IOException {
-        int t_len = in.readInt();
-        char[] t_chars = new char[t_len];
-
-        for(int i = 0; i<t_len; i++)
-            t_chars[i] = in.readChar();
-
-        return new String(t_chars);
     }
 }

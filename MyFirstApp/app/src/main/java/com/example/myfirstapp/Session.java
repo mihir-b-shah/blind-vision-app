@@ -5,12 +5,14 @@ import com.google.api.services.vision.v1.model.Vertex;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 import java.util.List;
 
 public class Session implements java.io.Serializable {
     private Annotation[] annotations;
     private String filepath;
     private String srcfile;
+    private final String nullstr = "NULL7019";
 
     public Session(Annotation[] a, String fp, String src) {
         this(a,fp);
@@ -32,13 +34,11 @@ public class Session implements java.io.Serializable {
 
     private void writeObject(ObjectOutputStream oos) throws IOException {
         oos.writeInt(annotations.length);
-        oos.write('\n');
         for(Annotation a: annotations) {
             a.writeObject(oos);
         }
-        write_string(filepath, oos);
-        write_string(srcfile, oos);
-        oos.writeChar('\0');
+        oos.writeUTF(filepath == null ? nullstr : filepath);
+        oos.writeUTF(srcfile == null ? nullstr : srcfile);
     }
 
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
@@ -47,8 +47,11 @@ public class Session implements java.io.Serializable {
         for(int i = 0; i<lim; ++i) {
             (annotations[i] = new Annotation()).readObject(ois);
         }
-        filepath = Annotation.getChars(ois);
-        srcfile = Annotation.getChars(ois);
+        filepath = ois.readUTF();
+        filepath = filepath.equals(nullstr) ? null : filepath;
+
+        srcfile = ois.readUTF();
+        srcfile = srcfile.equals(nullstr) ? null : srcfile;
     }
 
     public CharBuffer outform() throws IOException {
@@ -66,6 +69,7 @@ public class Session implements java.io.Serializable {
                 for (Vertex v : vertices) {
                     buffer.appendln(v.getX());
                     buffer.appendln(v.getY());
+                    System.out.printf("(%d, %d)%n", v.getX(), v.getY());
                 }
             }
         }
@@ -73,9 +77,8 @@ public class Session implements java.io.Serializable {
         return buffer;
     }
 
-    private void write_string(String s, ObjectOutputStream oos) throws IOException {
-        oos.writeInt(s.length());
-        oos.write(' ');
-        oos.writeChars(s);
+    @Override
+    public String toString() {
+        return String.format("%s %s %s", Arrays.toString(annotations), filepath, srcfile);
     }
 }
