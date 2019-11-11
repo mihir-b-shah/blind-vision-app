@@ -33,9 +33,9 @@ public class CharBuffer {
             div = c/=10;
             buffer[--ctr] = (char) (c-10*div+'0');
         }
-        final int lim = 6-ctr;
-        range_check(lim);
-        System.arraycopy(buffer, ctr, buf, pos, lim-1);
+        final int lim = 5-ctr;
+        range_check(lim+1);
+        System.arraycopy(buffer, ctr, buf, pos, lim);
         pos+=lim;
         buf[pos++] = '\n';
     }
