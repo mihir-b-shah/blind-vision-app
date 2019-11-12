@@ -29,10 +29,11 @@ public class CharBuffer {
         char[] buffer = new char[5];
         int div = 0;
         int ctr = buffer.length;
-        while(c > 0) {
-            div = c/=10;
-            buffer[--ctr] = (char) (c-10*div+'0');
-        }
+        do {
+            div = c/10;
+            buffer[--ctr] = (char) (c-10*div+48);
+            c = div;
+        } while(c > 0);
         final int lim = 5-ctr;
         range_check(lim+1);
         System.arraycopy(buffer, ctr, buf, pos, lim);

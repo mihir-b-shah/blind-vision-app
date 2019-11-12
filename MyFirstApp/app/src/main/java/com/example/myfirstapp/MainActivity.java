@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
                     Intent api = new Intent(getApplicationContext(), CallGAPI.class);
                     api.putExtra("photo-path", mCurrentPhotoPath);
-                    api.putExtra("file-path", (String) null);
+                    api.putExtra("file-path", "NEXT");
                     api.putExtra("cache", "NEXT");
                     startActivityForResult(api, 3);
                     break;

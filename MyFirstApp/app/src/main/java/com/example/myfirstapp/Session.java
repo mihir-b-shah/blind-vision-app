@@ -63,17 +63,22 @@ public class Session implements java.io.Serializable {
             buffer.appendln_nc(ant.d);
             String wr = ant.c != -1 ? Float.toString(ant.c) : "";
             buffer.appendln(wr);
-            List<Vertex> vertices = ant.b.getVertices();
-            if(vertices != null) {
-                buffer.appendln(vertices.size());
-                for (Vertex v : vertices) {
-                    buffer.appendln(v.getX());
-                    buffer.appendln(v.getY());
-                    System.out.printf("(%d, %d)%n", v.getX(), v.getY());
+            if(ant.b != null) {
+                List<Vertex> vertices = ant.b.getVertices();
+                if (vertices != null) {
+                    buffer.appendln(vertices.size());
+                    for (Vertex v : vertices) {
+                        buffer.appendln(v.getX());
+                        buffer.appendln(v.getY());
+                        System.out.printf("(%d, %d)%n", v.getX(), v.getY());
+                    }
+                } else {
+                    buffer.appendln(0);
                 }
+            } else {
+                buffer.appendln(0);
             }
         }
-        buffer.append('\0');
         return buffer;
     }
 

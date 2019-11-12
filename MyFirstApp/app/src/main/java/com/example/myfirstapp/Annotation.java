@@ -77,6 +77,8 @@ public class Annotation implements Serializable,Comparable<Annotation> {
 
     @Override
     public String toString() {
+        return d;
+        /*
         StringBuilder sb = new StringBuilder();
         sb.append(getTag());
         sb.append("Vertices: ");
@@ -92,6 +94,7 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         sb.append("Name: " + d);
         sb.append("Score: " + c);
         return sb.toString();
+         */
     }
 
     // makes serializing methods more efficient.
