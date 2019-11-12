@@ -39,6 +39,7 @@ public class Annotation implements Serializable,Comparable<Annotation> {
             List<Symbol> symbols = w.getSymbols();
             for(Symbol s: symbols)
                 sb.append(s.getText());
+            sb.append(' ');
         }
 
         d = sb.toString();
