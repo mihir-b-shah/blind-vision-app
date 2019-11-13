@@ -32,6 +32,10 @@ public class Session implements java.io.Serializable {
         return annotations[i];
     }
 
+    public int size() {
+        return annotations.length;
+    }
+
     private void writeObject(ObjectOutputStream oos) throws IOException {
         oos.writeInt(annotations.length);
         for(Annotation a: annotations) {
@@ -68,9 +72,8 @@ public class Session implements java.io.Serializable {
                 if (vertices != null) {
                     buffer.appendln(vertices.size());
                     for (Vertex v : vertices) {
-                        buffer.appendln(v.getX());
-                        buffer.appendln(v.getY());
-                        System.out.printf("(%d, %d)%n", v.getX(), v.getY());
+                        buffer.appendln(v.getX() == null ? -1 : v.getX());
+                        buffer.appendln(v.getY() == null ? -1 : v.getY());
                     }
                 } else {
                     buffer.appendln(0);

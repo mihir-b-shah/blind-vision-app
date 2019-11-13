@@ -80,35 +80,15 @@ public class MainActivity extends AppCompatActivity {
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
                     Intent api = new Intent(getApplicationContext(), CallGAPI.class);
                     api.putExtra("photo-path", mCurrentPhotoPath);
-                    api.putExtra("file-path", "NEXT");
-                    api.putExtra("cache", "NEXT");
+                    api.putExtra("write-file", "READFILE");
+                    api.putExtra("read-file", "READFILE");
                     startActivityForResult(api, 3);
                     break;
                 case 3:
                     session = (Session) data.getSerializableExtra("list-annotation");
                     System.out.println("Annotations: " + session);
-                    /* Intent sp = new Intent(getApplicationContext(), SpellCheck.class);
-                    ArrayList<String> copy = new ArrayList<>();
+                    Converge.
 
-                    for(Annotation a: annotations) {
-                        if(a.t.equals("t")) {
-                            copy.add(a.d);
-                        }
-                    }
-                    sp.putExtra("input_data", copy);
-                    startActivityForResult(sp, 4);
-                    // System.out.println("ANNOTATIONS: " + annotations); */
-                    break;
-                case 4:
-                    String[] fixes = data.getStringArrayExtra("corrections");
-                    final int lim = fixes.length;
-                    int ctr = 0;
-                    for(int i = 0; i<lim; ++i) {
-                        if(session.get_annotation(i).t.equals("t")) {
-                            session.get_annotation(i).d = fixes[ctr++];
-                        }
-                    }
-                    System.out.println("Fixed annotations: " + session);
                 case 10:
                     System.err.println("mudhaniu the large!");
             }
@@ -119,3 +99,29 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 }
+
+/*
+    Intent sp = new Intent(getApplicationContext(), SpellCheck.class);
+        ArrayList<String> copy = new ArrayList<>();
+        Annotation an;
+        final int size = session.size();
+
+        for(int i = 0; i<size; ++i) {
+            if((an = session.get_annotation(i)).t.equals("t")) {
+                copy.add(an.d);
+            }
+        }
+        sp.putExtra("input_data", copy);
+        startActivityForResult(sp, 4);
+        break;
+    case 4:
+        String[] fixes = data.getStringArrayExtra("corrections");
+        final int lim = fixes.length;
+        int ctr = 0;
+        for(int i = 0; i<lim; ++i) {
+            if(session.get_annotation(i).t.equals("t")) {
+                session.get_annotation(i).d = fixes[ctr++];
+            }
+        }
+        System.out.println("Fixed annotations: " + session);
+ */
