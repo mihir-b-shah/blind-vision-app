@@ -87,13 +87,13 @@ public class MainActivity extends AppCompatActivity {
                 case 3:
                     session = (Session) data.getSerializableExtra("list-annotation");
                     System.out.println("Annotations: " + session);
-                    Converge.
-
-                case 10:
-                    System.err.println("mudhaniu the large!");
+                    Intent convg = new Intent();
+                    convg.putExtra("session", session);
+                    convg.putExtra("query", spkText);
+                    startActivityForResult(convg, 4);
+                case 4:
+                    session = (Session) data.getSerializableExtra("corrected");
             }
-        } else {
-            // Handle all possible exceptions.
         }
 
         super.onActivityResult(requestCode, resultCode, data);

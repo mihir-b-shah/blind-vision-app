@@ -16,18 +16,19 @@ import java.util.PriorityQueue;
 
 public class ConvgAnnot extends AppCompatActivity {
 
+    private Session session;
+    private String keyword;
+    private static final int NUM_ANNOT = 3;
+
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.activity_convg_annot);
 
-        getIntent().get
+        keyword = getIntent().getStringExtra("query");
+        session = (Session) getIntent().getSerializableExtra("session");
+        converge(session, keyword);
     }
-
-
-    private Session session;
-    private String keyword;
-    private static final int NUM_ANNOT = 3;
 
     private class Pair implements Comparable<Pair> {
         final Annotation sess;
@@ -46,9 +47,6 @@ public class ConvgAnnot extends AppCompatActivity {
 
     public Annotation converge(Session session, String keyword) {
         final int size = session.size();
-        this.session = session;
-        this.keyword = keyword;
-
         String[] buffer = new String[size+1];
         for(int i = 0; i<size;) {
             buffer[i] = session.get_annotation(i++).d;
