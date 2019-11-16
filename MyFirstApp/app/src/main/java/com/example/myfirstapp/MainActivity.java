@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
                 case 3:
                     session = (Session) data.getSerializableExtra("list-annotation");
                     System.out.println("Annotations: " + session);
-                    Intent convg = new Intent();
+                    Intent convg = new Intent(getApplicationContext(), ConvgAnnot.class);
                     convg.putExtra("session", session);
                     convg.putExtra("query", spkText);
                     startActivityForResult(convg, 4);

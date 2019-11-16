@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.PriorityQueue;
 
 public class ConvgAnnot extends AppCompatActivity {
@@ -48,8 +49,9 @@ public class ConvgAnnot extends AppCompatActivity {
     public Annotation converge(Session session, String keyword) {
         final int size = session.size();
         String[] buffer = new String[size+1];
+        buffer[0] = keyword;
         for(int i = 0; i<size;) {
-            buffer[i] = session.get_annotation(i++).d;
+            buffer[i+1] = session.get_annotation(i++).d;
         }
         new TwinwordCall().execute(buffer);
         return null;
@@ -61,7 +63,7 @@ public class ConvgAnnot extends AppCompatActivity {
             StringBuilder sb = new StringBuilder();
             sb.append('[');
             for(int i = 1; i<strings.length; ++i) {
-                sb.append(String.format("%s, ", strings[i]));
+                sb.append(String.format("%s, ", strings[i].trim().toLowerCase()));
             }
             sb.deleteCharAt(sb.length()-1);
             sb.deleteCharAt(sb.length()-1);
@@ -101,6 +103,7 @@ public class ConvgAnnot extends AppCompatActivity {
                 OutputStream os = con.getOutputStream();
                 String str = String.format("{\"w1\":\"%s\", \"w2\":\"%s\"}", arrayString(strings),
                         strings[0]);
+                System.out.println(str);
                 byte[] write = str.getBytes(StandardCharsets.UTF_8);
                 os.write(write);
                 os.flush();
@@ -110,8 +113,10 @@ public class ConvgAnnot extends AppCompatActivity {
                 if(con.getResponseCode() == 200) {
                     InputStream instr = con.getInputStream();
                     result = readFloatArray(strings.length-1, instr);
+                    System.out.println(Arrays.toString(result));
                 } else {
-                    System.err.println("Request did not go through correctly.");
+                    System.out.println(con.getResponseCode());
+                    System.out.println("Request did not go through correctly.");
                 }
                 return result;
             } catch (IOException e) {
