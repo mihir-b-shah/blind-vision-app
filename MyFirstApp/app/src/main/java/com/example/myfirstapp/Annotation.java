@@ -12,6 +12,7 @@ public class Annotation implements Serializable,Comparable<Annotation> {
     public float c; // confidence
     public BoundingPoly b; // bounding polygon
     public String t; // tag
+    public float match; // match with query string
 
     public Annotation(LocalizedObjectAnnotation loa) {
         t = "o";
@@ -104,6 +105,7 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         out.writeUTF(t);
         out.writeUTF(d);
         out.writeFloat(c);
+        out.writeFloat(match);
 
         // Avoids expensive gc eInt(t.lengtof the bounding poly.
 
@@ -130,6 +132,7 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         t = in.readUTF();
         d = in.readUTF();
         c = in.readFloat();
+        match = in.readFloat();
         b = getBP(in);
     }
 

@@ -24,6 +24,14 @@ public class Session implements java.io.Serializable {
         filepath = fp;
     }
 
+    public Session copy() {
+        return new Session(null, filepath, srcfile);
+    }
+
+    public void setAnnotation(Annotation[] a) {
+        annotations = a;
+    }
+
     public void set_srcfile(String src) {
         srcfile = src;
     }
