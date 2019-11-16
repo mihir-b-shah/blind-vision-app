@@ -6,3 +6,5 @@
 **BlindVision** is a Java source library for some NLP techniques.
 
 **Arduino sensor code** is a collection of python scripts for processing my signal data.
+
+**Server** is a Flask Python REST API to emulate something like Twinword API to batch requests.
