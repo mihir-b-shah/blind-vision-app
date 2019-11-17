@@ -73,7 +73,6 @@ public class ConvgAnnot extends AppCompatActivity {
 
         private float[] readFloatArray(int N, InputStream instr) throws IOException {
             byte buf;
-            float v = 0;
             float[] floats = new float[N];
             int ctr = 0;
             ByteBuffer buffer = new ByteBuffer();
