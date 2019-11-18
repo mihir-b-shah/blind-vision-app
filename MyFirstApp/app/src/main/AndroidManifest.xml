@@ -36,7 +36,15 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ConvgAnnot"></activity>
+        <activity
+            android:name=".Calibrate"
+            android:label="@string/title_activity_calibrate"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+        <activity
+            android:name=".Orient"
+            android:label="@string/title_activity_orient"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity android:name=".ConvgAnnot" />
         <activity
             android:name=".SpellCheck"
             android:label="@string/title_activity_spell_check"

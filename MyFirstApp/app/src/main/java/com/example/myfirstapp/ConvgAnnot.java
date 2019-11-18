@@ -19,7 +19,7 @@ public class ConvgAnnot extends AppCompatActivity {
 
     private Session session;
     private String keyword;
-    private static final int NUM_ANNOT = 3;
+    private static final int NUM_ANNOT = 1;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -131,16 +131,19 @@ public class ConvgAnnot extends AppCompatActivity {
                 pq.offer(new Pair(session.get_annotation(i), f[i]));
             }
             Annotation[] result = new Annotation[NUM_ANNOT];
+            if(NUM_ANNOT > pq.size()) {
+                System.err.println("NUM_ANNOT too big. Fatal exception occurred.");
+                ConvgAnnot.this.setResult(Activity.RESULT_CANCELED);
+                ConvgAnnot.this.finish();
+            }
+
             for(int i = 0; i<NUM_ANNOT; ++i) {
                 Annotation a = pq.poll().sess;
                 a.match = f[i];
                 result[i] = a;
             }
-            Intent out = new Intent();
-            Session s = session.copy();
-            s.setAnnotation(result);
-            out.putExtra("correction", s);
-            ConvgAnnot.this.setResult(Activity.RESULT_OK, out);
+            session.setAnnotation(result);
+            ConvgAnnot.this.setResult(Activity.RESULT_OK);
             ConvgAnnot.this.finish();
         }
     }

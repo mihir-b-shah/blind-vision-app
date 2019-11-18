@@ -73,26 +73,38 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case 1:
                     spkText = data.getStringExtra("spk-text");
-                    Intent photo = new Intent(getApplicationContext(), Photo.class);
-                    startActivityForResult(photo, 2);
+                    Intent quest = new Intent(getApplicationContext(), Speak.class);
+                    quest.putExtra(EXTRA_MESSAGE, "Please calibrate the phone.");
+                    startActivityForResult(quest, 2);
                     break;
                 case 2:
+                    Intent calibr = new Intent(getApplicationContext(), Calibrate.class);
+                    startActivityForResult(calibr, 3);
+                    break;
+                case 3:
+                    float[] vector = data.getFloatArrayExtra("vector");
+                    Intent photo = new Intent(getApplicationContext(), Photo.class);
+                    startActivityForResult(photo, 4);
+                    break;
+                case 4:
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
                     Intent api = new Intent(getApplicationContext(), CallGAPI.class);
                     api.putExtra("photo-path", mCurrentPhotoPath);
                     api.putExtra("write-file", "READFILE");
                     api.putExtra("read-file", "READFILE");
-                    startActivityForResult(api, 3);
+                    startActivityForResult(api, 5);
                     break;
-                case 3:
+                case 5:
                     session = (Session) data.getSerializableExtra("list-annotation");
                     System.out.println("Annotations: " + session);
                     Intent convg = new Intent(getApplicationContext(), ConvgAnnot.class);
                     convg.putExtra("session", session);
                     convg.putExtra("query", spkText);
-                    startActivityForResult(convg, 4);
-                case 4:
-                    session = (Session) data.getSerializableExtra("corrected");
+                    startActivityForResult(convg, 6);
+                    break;
+                case 6:
+                    Annotation annot = session.get_annotation(0);
+                    break;
             }
         }
 
