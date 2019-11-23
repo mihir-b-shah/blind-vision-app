@@ -20,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_MESSAGE = "com.example.myfirstapp.MESSAGE";
     private Session session;
     private String spkText;
+    private Annotation convgd;
     private String adjectives;
     private String mCurrentPhotoPath;
     private boolean first = true;
@@ -69,10 +70,10 @@ public class MainActivity extends AppCompatActivity {
                     Intent start = new Intent(getApplicationContext(), WordInput.class);
                     start.putExtra("question", "What are you looking for?");
                     first = false;
-                    startActivityForResult(start, 1);
+                    startActivityForResult(start, 3);
                     break;
                 case 1:
-                    spkText = data.getStringExtra("spk-text");
+                    System.out.println("spktext1: " + spkText);
                     Intent quest = new Intent(getApplicationContext(), Speak.class);
                     quest.putExtra(EXTRA_MESSAGE, "Please calibrate the phone.");
                     startActivityForResult(quest, 2);
@@ -82,7 +83,8 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(calibr, 3);
                     break;
                 case 3:
-                    float[] vector = data.getFloatArrayExtra("vector");
+                    spkText = data.getStringExtra("spk-text");
+                    //float[] vector = data.getFloatArrayExtra("vector");
                     Intent photo = new Intent(getApplicationContext(), Photo.class);
                     startActivityForResult(photo, 4);
                     break;
@@ -91,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
                     Intent api = new Intent(getApplicationContext(), CallGAPI.class);
                     api.putExtra("photo-path", mCurrentPhotoPath);
                     api.putExtra("write-file", "READFILE");
-                    api.putExtra("read-file", "READFILE");
+                    api.putExtra("read-file", (String) null);
                     startActivityForResult(api, 5);
                     break;
                 case 5:
@@ -99,11 +101,23 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("Annotations: " + session);
                     Intent convg = new Intent(getApplicationContext(), ConvgAnnot.class);
                     convg.putExtra("session", session);
+                    System.out.println("spktext: " + spkText);
                     convg.putExtra("query", spkText);
                     startActivityForResult(convg, 6);
                     break;
                 case 6:
+                    session = (Session) data.getSerializableExtra("session");
                     Annotation annot = session.get_annotation(0);
+                    System.out.println("Converged annotation: " + annot);
+                    boolean right;
+                    if(annot.b.getVertices() != null)
+                        right = annot.b.getVertices().get(0).getX()>960;
+                    else
+                        right = false;
+                    Intent tell = new Intent(getApplicationContext(), Speak.class);
+                    tell.putExtra(EXTRA_MESSAGE, "The object found is to your " +
+                            (right ? "right" : "left"));
+                    startActivityForResult(tell, 7);
                     break;
             }
         }

@@ -28,7 +28,7 @@ public class ConvgAnnot extends AppCompatActivity {
 
         keyword = getIntent().getStringExtra("query");
         session = (Session) getIntent().getSerializableExtra("session");
-        converge(session, keyword);
+        converge(session);
     }
 
     private class Pair implements Comparable<Pair> {
@@ -46,14 +46,34 @@ public class ConvgAnnot extends AppCompatActivity {
         }
     }
 
-    public Annotation converge(Session session, String keyword) {
+    public Annotation converge(Session session) {
         final int size = session.size();
         String[] buffer = new String[size+1];
         buffer[0] = keyword;
-        for(int i = 0; i<size;) {
-            buffer[i+1] = session.get_annotation(i++).d;
+        Annotation[] incase = new Annotation[1];
+        boolean done = false;
+        for(int i = 0; i<size; ++i) {
+            buffer[i+1] = session.get_annotation(i).d;
+            System.out.println("keyword found: " + buffer[i+1].toLowerCase().contains(keyword));
+            if(session.get_annotation(i).d != null &&
+                    session.get_annotation(i).d.toLowerCase().contains(keyword)) {
+                System.out.println("Descr: " + session.get_annotation(i).d.toLowerCase());
+                incase[0] = session.get_annotation(i);
+                session.setAnnotation(incase);
+                System.out.println(incase[0].d);
+                done = true;
+                break;
+            }
         }
-        new TwinwordCall().execute(buffer);
+        System.out.println(done);
+        if(done) {
+            Intent output = new Intent();
+            output.putExtra("session", session);
+            ConvgAnnot.this.setResult(Activity.RESULT_OK, output);
+            ConvgAnnot.this.finish();
+        } else {
+            new TwinwordCall().execute(buffer);
+        }
         return null;
     }
 
