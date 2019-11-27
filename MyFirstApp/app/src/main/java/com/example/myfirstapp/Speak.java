@@ -15,7 +15,6 @@ import java.util.Locale;
 public class Speak extends AppCompatActivity implements TextToSpeech.OnInitListener {
 
     private TextToSpeech tts;
-    private boolean init;
     private String message;
 
     @Override
@@ -42,7 +41,6 @@ public class Speak extends AppCompatActivity implements TextToSpeech.OnInitListe
     public void onInit(int i) {
         if(i == TextToSpeech.SUCCESS) {
             tts.setLanguage(Locale.ENGLISH);
-            init = true;
             speak(message);
         }
     }

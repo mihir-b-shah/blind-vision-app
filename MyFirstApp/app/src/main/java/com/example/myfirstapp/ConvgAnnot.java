@@ -3,8 +3,8 @@ package com.example.myfirstapp;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.AsyncTask;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,14 +28,14 @@ public class ConvgAnnot extends AppCompatActivity {
 
         keyword = getIntent().getStringExtra("query");
         session = (Session) getIntent().getSerializableExtra("session");
-        converge(session);
+        converge();
     }
 
     private class Pair implements Comparable<Pair> {
         final Annotation sess;
         final float conf;
 
-        public Pair(Annotation s, float c) {
+        Pair(Annotation s, float c) {
             sess = s;
             conf = c;
         }
@@ -46,38 +46,17 @@ public class ConvgAnnot extends AppCompatActivity {
         }
     }
 
-    public Annotation converge(Session session) {
+    public void converge() {
         final int size = session.size();
         String[] buffer = new String[size+1];
         buffer[0] = keyword;
-        Annotation[] incase = new Annotation[1];
-        boolean done = false;
         for(int i = 0; i<size; ++i) {
             buffer[i+1] = session.get_annotation(i).d;
-            System.out.println("keyword found: " + buffer[i+1].toLowerCase().contains(keyword));
-            if(session.get_annotation(i).d != null &&
-                    session.get_annotation(i).d.toLowerCase().contains(keyword)) {
-                System.out.println("Descr: " + session.get_annotation(i).d.toLowerCase());
-                incase[0] = session.get_annotation(i);
-                session.setAnnotation(incase);
-                System.out.println(incase[0].d);
-                done = true;
-                break;
-            }
         }
-        System.out.println(done);
-        if(done) {
-            Intent output = new Intent();
-            output.putExtra("session", session);
-            ConvgAnnot.this.setResult(Activity.RESULT_OK, output);
-            ConvgAnnot.this.finish();
-        } else {
-            new TwinwordCall().execute(buffer);
-        }
-        return null;
+        new NLPCall().execute(buffer);
     }
 
-    private class TwinwordCall extends AsyncTask<String, Void, float[]> {
+    private class NLPCall extends AsyncTask<String, Void, float[]> {
 
         private String arrayString(String[] strings) {
             StringBuilder sb = new StringBuilder();
@@ -102,7 +81,7 @@ public class ConvgAnnot extends AppCompatActivity {
                     case ' ': break;
                     case ',': floats[ctr++] = Float.parseFloat(new String(buffer.getBuffer()));
                         buffer.clear(); break;
-                    case ']': floats[ctr++] = Float.parseFloat(new String(buffer.getBuffer()));
+                    case ']': floats[ctr] = Float.parseFloat(new String(buffer.getBuffer()));
                         buffer.clear(); break outer;
                     default: buffer.add(buf);
                 }
@@ -155,16 +134,18 @@ public class ConvgAnnot extends AppCompatActivity {
                 System.err.println("NUM_ANNOT too big. Fatal exception occurred.");
                 ConvgAnnot.this.setResult(Activity.RESULT_CANCELED);
                 ConvgAnnot.this.finish();
+            } else {
+                for (int i = 0; i < NUM_ANNOT; ++i) {
+                    Annotation a = pq.poll().sess;
+                    a.match = f[i];
+                    result[i] = a;
+                }
+                Intent out = new Intent();
+                session.setAnnotation(result);
+                out.putExtra("session", session);
+                ConvgAnnot.this.setResult(Activity.RESULT_OK, out);
+                ConvgAnnot.this.finish();
             }
-
-            for(int i = 0; i<NUM_ANNOT; ++i) {
-                Annotation a = pq.poll().sess;
-                a.match = f[i];
-                result[i] = a;
-            }
-            session.setAnnotation(result);
-            ConvgAnnot.this.setResult(Activity.RESULT_OK);
-            ConvgAnnot.this.finish();
         }
     }
 }

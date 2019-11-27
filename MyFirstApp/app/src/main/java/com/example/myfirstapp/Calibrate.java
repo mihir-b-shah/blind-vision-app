@@ -1,27 +1,33 @@
 package com.example.myfirstapp;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.view.Display;
-import android.view.WindowManager;
 
 import java.util.Arrays;
-
-/* TONE GENERATOR class */
 
 public class Calibrate extends AppCompatActivity implements SensorEventListener {
 
     private SensorManager mSensorManager;
     private Sensor[] sensors;
+    private static final int VOLUME = 85;
+    private static final int DURATION = 5000;
+    private static final int FREQ = 500;
+    private static final int BEEP_LENGTH = 100;
+    private static final int NUM_SAMPLES = 10;
     private float[][] data;
     private float[] orientationValues;
-    private Display mDisplay;
+    private boolean set;
+    private int ctr;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,9 +43,6 @@ public class Calibrate extends AppCompatActivity implements SensorEventListener 
         for(float[] dat: data) {
             Arrays.fill(dat, -1f);
         }
-
-        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        mDisplay = wm.getDefaultDisplay();
     }
 
     /*
@@ -58,6 +61,30 @@ public class Calibrate extends AppCompatActivity implements SensorEventListener 
         if (sensors[1] != null)
             mSensorManager.registerListener(this, sensors[1],
                     SensorManager.SENSOR_DELAY_NORMAL);
+
+        final ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_SYSTEM, VOLUME);
+        Thread beep = new Thread(){
+            final int DIFF = FREQ-BEEP_LENGTH;
+            @Override
+            public void run() {
+                for(int time = 0; time<DURATION; time+=FREQ){
+                    tg.stopTone();
+                    tg.startTone(ToneGenerator.TONE_CDMA_ONE_MIN_BEEP, BEEP_LENGTH);
+                    try {
+                        sleep(DIFF);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+        beep.start();
+        try {
+            beep.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        tg.release();
     }
 
     @Override
@@ -88,10 +115,13 @@ public class Calibrate extends AppCompatActivity implements SensorEventListener 
                 break;
         }
 
-        if(nullCheck(data[0]) || nullCheck(data[1])) {
+        if(!set && (nullCheck(data[0]) || nullCheck(data[1]))) {
             return;
+        } else {
+            set = true;
         }
 
+        ++ctr;
         float[] rotationMatrix = new float[9];
         float[] inclination = new float[9];
         boolean rotationOK = SensorManager.getRotationMatrix(rotationMatrix,
@@ -100,7 +130,13 @@ public class Calibrate extends AppCompatActivity implements SensorEventListener 
         orientationValues = new float[3];
         if (rotationOK)
             SensorManager.getOrientation(rotationMatrix, orientationValues);
-        System.out.println(Arrays.toString(orientationValues) + " " + mDisplay.getRotation());
+
+        if(ctr > NUM_SAMPLES) {
+            Intent out = new Intent();
+            out.putExtra("vector", orientationValues);
+            Calibrate.this.setResult(Activity.RESULT_OK, out);
+            Calibrate.this.finish();
+        }
     }
 
     @Override

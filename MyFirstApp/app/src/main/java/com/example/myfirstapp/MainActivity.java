@@ -19,6 +19,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String EXTRA_MESSAGE = "com.example.myfirstapp.MESSAGE";
     private Session session;
+    private float[] calibrVect;
     private String spkText;
     private Annotation convgd;
     private String adjectives;
@@ -70,10 +71,10 @@ public class MainActivity extends AppCompatActivity {
                     Intent start = new Intent(getApplicationContext(), WordInput.class);
                     start.putExtra("question", "What are you looking for?");
                     first = false;
-                    startActivityForResult(start, 3);
+                    startActivityForResult(start, 1);
                     break;
                 case 1:
-                    System.out.println("spktext1: " + spkText);
+                    spkText = data.getStringExtra("spk-text");
                     Intent quest = new Intent(getApplicationContext(), Speak.class);
                     quest.putExtra(EXTRA_MESSAGE, "Please calibrate the phone.");
                     startActivityForResult(quest, 2);
@@ -83,8 +84,8 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(calibr, 3);
                     break;
                 case 3:
-                    spkText = data.getStringExtra("spk-text");
-                    //float[] vector = data.getFloatArrayExtra("vector");
+                    calibrVect = data.getFloatArrayExtra("vector");
+                    System.out.println("my vector: " + Arrays.toString(calibrVect));
                     Intent photo = new Intent(getApplicationContext(), Photo.class);
                     startActivityForResult(photo, 4);
                     break;
@@ -93,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
                     Intent api = new Intent(getApplicationContext(), CallGAPI.class);
                     api.putExtra("photo-path", mCurrentPhotoPath);
                     api.putExtra("write-file", "READFILE");
-                    api.putExtra("read-file", (String) null);
+                    api.putExtra("read-file", "READFILE");
                     startActivityForResult(api, 5);
                     break;
                 case 5:

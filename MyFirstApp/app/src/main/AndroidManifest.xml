@@ -37,9 +37,19 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
+            android:name=".WordInput"
+            android:label="@string/title_activity_word_input"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+
+        <service
+            android:name=".WordInput"
+            android:enabled="true"
+            android:exported="true" />
+
+        <activity
             android:name=".Calibrate"
             android:label="@string/title_activity_calibrate"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".Orient"
             android:label="@string/title_activity_orient"
@@ -71,10 +81,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <activity
-            android:name=".WordInput"
-            android:label="@string/title_activity_word_input"
-            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".Speak"
             android:label="@string/title_activity_speak"

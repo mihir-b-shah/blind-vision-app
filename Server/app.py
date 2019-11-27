@@ -1,12 +1,12 @@
 
-from flask import Flask, jsonify, request
+from flask import Flask, request
 from nltk.corpus import wordnet as wn
 from gensim.test.utils import common_texts
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 import numpy
 import re
 
-global model
+model = 0
 app = Flask(__name__)
 
 def init():
@@ -16,6 +16,12 @@ def init():
     model.delete_temporary_training_data(keep_doctags_vectors=True, keep_inference=True)
 
 def word_pathsim(w1,w2):
+    list1 = wn.synsets(w1,'n')
+    list2 = wn.synsets(w2,'n')
+
+    if(len(list1) == 0 or len(list2) == 0):
+        return 0
+
     return (wn.synsets(w1,'n')[0]).path_similarity(wn.synsets(w2,'n')[0])
 
 def phrasesim(s1,s2):
@@ -29,6 +35,7 @@ def phrasesim(s1,s2):
 
 @app.route('/', methods = ['POST'])
 def gen_ss():
+    init()
     word_data = request.get_json()
     w1 = word_data['w1']
     w2 = word_data['w2']
@@ -46,12 +53,13 @@ def gen_ss():
         if(len(array_11[i]) == 1):
             val = word_pathsim(str(array_1[i]),w2)
         else:
-            val = phrasesim(array_11, [w2])
+            arr = []
+            arr.append(w2)
+            val = phrasesim(array_11[i], arr)
 
         output.append(val)
-    res = {'val':str(output)}
-    return jsonify(res)
+    res = str(output)
+    return res
 
 if __name__ == '__main__':
-    init()
     app.run()
