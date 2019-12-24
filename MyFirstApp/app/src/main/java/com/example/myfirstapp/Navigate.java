@@ -129,13 +129,6 @@ public class Navigate extends AppCompatActivity implements SensorEventListener {
             dir_init = azimuth;
             calibr = true;
         }
-
-        System.out.printf("<%.2f, %.2f, %.2f>%n",
-                azimuth, pitch, roll);
-        /*
-        gen_xyz_vect(xyz_vect, azimuth, pitch, roll);
-        System.out.printf("<%.2f, %.2f, %.2f>%n",
-                xyz_vect[0], xyz_vect[1], xyz_vect[2]); */
     }
 
     public void gen_xyz_vect(float[] fill, float a, float p, float r) {

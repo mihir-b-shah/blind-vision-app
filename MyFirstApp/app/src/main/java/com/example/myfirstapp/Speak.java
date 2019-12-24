@@ -49,8 +49,6 @@ public class Speak extends Service implements TextToSpeech.OnInitListener {
             @Override public void onDone(String s) {
                 Intent out = new Intent(MainActivity.SERVICE_RESPONSE);
                 out.putExtra(INT_1, id);
-                System.out.println("Id: " + id);
-                System.out.println("Broadcast sent!");
                 LocalBroadcastManager.getInstance(getApplicationContext())
                         .sendBroadcast(out);
                 tts.shutdown();

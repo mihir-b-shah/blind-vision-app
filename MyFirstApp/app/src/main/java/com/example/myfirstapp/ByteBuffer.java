@@ -6,12 +6,8 @@ public class ByteBuffer {
     private byte[] buffer;
     private int size;
 
-    public ByteBuffer() {
+    ByteBuffer() {
         buffer = new byte[2];
-    }
-
-    public ByteBuffer(int N) {
-        buffer = new byte[N];
     }
 
     public void add(byte b) {

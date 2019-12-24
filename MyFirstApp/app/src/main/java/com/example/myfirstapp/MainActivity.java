@@ -50,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             if(intent.getAction() != null && intent.getAction().equals(SERVICE_RESPONSE)) {
                 int code = intent.getIntExtra(INT_1, -1);
-                System.out.println(code);
                 Intent next;
                 switch (code) {
                     case 0:
@@ -65,16 +64,13 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case 3:
                         calibrVect = intent.getFloatArrayExtra("vector");
-                        System.out.println("my vector: " + Arrays.toString(calibrVect));
                         next = new Intent(getApplicationContext(), Photo.class);
                         startActivityForResult(next, 4);
                         break;
                     case 5:
                         session = (Session) intent.getSerializableExtra("session");
-                        System.out.println("Annotations: " + session);
                         next = new Intent(getApplicationContext(), Converge.class);
                         next.putExtra(STRING_2, session);
-                        System.out.println("spktext: " + spkText);
                         next.putExtra(STRING_1, spkText);
                         next.putExtra(INT_1, 6);
                         startService(next);
@@ -82,7 +78,6 @@ public class MainActivity extends AppCompatActivity {
                     case 6:
                         session = (Session) intent.getSerializableExtra("session");
                         Annotation annot = session.get_annotation(0);
-                        System.out.println("Converged annotation: " + annot);
                         boolean right;
                         if(annot.b.getVertices() != null)
                             right = annot.b.getVertices().get(0).getX()>960;
@@ -147,9 +142,7 @@ public class MainActivity extends AppCompatActivity {
                 case 4:
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
                     photoVect = data.getFloatArrayExtra("vector");
-                    System.out.println(Arrays.toString(photoVect));
                     next = new Intent(getApplicationContext(), CallAPI.class);
-                    System.out.println("spktext: " + spkText);
                     next.putExtra(STRING_1, mCurrentPhotoPath);
                     next.putExtra(STRING_2, "READFILE");
                     next.putExtra(STRING_3, (String) null);

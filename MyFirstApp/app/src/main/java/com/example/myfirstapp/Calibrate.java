@@ -51,7 +51,6 @@ public class Calibrate extends Service implements SensorEventListener {
         if (sensors[1] != null)
             mSensorManager.registerListener(this, sensors[1],
                     SensorManager.SENSOR_DELAY_NORMAL);
-        System.out.println("id is set line 54!");
         return Service.START_NOT_STICKY;
     }
 
@@ -73,8 +72,6 @@ public class Calibrate extends Service implements SensorEventListener {
                 break;
         }
 
-        System.out.println(getClass().toString() + " Sensor changed! Line 88.");
-
         if(!set && (nullCheck(data[0]) || nullCheck(data[1]))) {
             return;
         } else {
@@ -93,12 +90,10 @@ public class Calibrate extends Service implements SensorEventListener {
 
         if(ctr > getNumSamples()) {
             Intent out = new Intent(MainActivity.SERVICE_RESPONSE);
-            System.out.println("Got to stopself line 94");
             mSensorManager.unregisterListener(this, sensors[0]);
             mSensorManager.unregisterListener(this, sensors[1]);
 
             out.putExtra("vector", orientationValues);
-            System.out.println("here is the id at 101: " + id);
             out.putExtra(INT_1, id);
             LocalBroadcastManager.getInstance(getApplicationContext())
                     .sendBroadcast(out);
