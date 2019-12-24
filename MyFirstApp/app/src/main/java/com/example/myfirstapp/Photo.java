@@ -1,12 +1,16 @@
 package com.example.myfirstapp;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 
 import com.google.api.services.vision.v1.model.Vertex;
@@ -14,6 +18,9 @@ import com.google.api.services.vision.v1.model.Vertex;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+
+import static com.example.myfirstapp.MainActivity.INT_1;
+import static com.example.myfirstapp.MainActivity.SERVICE_RESPONSE;
 
 public class Photo extends AppCompatActivity {
 
@@ -25,16 +32,35 @@ public class Photo extends AppCompatActivity {
         List<Vertex> vertices = annot.b.getVertices();
     }
 
-    /*
-    Need full audio functionality
-     */
+    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+        if(intent.getAction() != null && intent.getAction().equals(SERVICE_RESPONSE)) {
+            int code = intent.getIntExtra(INT_1, -1);
+            if (code == 1) {
+                float[] vect = intent.getFloatArrayExtra("vector");
+                Intent next = new Intent();
+                next.putExtra("photo-path", mCurrentPhotoPath);
+                next.putExtra("vector", vect);
+                Photo.this.setResult(Activity.RESULT_OK, next);
+                Photo.this.finish();
+            }
+        }
+        }
+    };
+
+    /* Need full audio functionality */
     @Override
     protected void onCreate(Bundle st) {
         super.onCreate(st);
         setContentView(R.layout.activity_photo);
         mCurrentPhotoPath = st != null ? st.getString("photo-path") : null;
         first = st == null;
-        if(first) dispatchTakePictureIntent();
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
+                receiver, new IntentFilter(SERVICE_RESPONSE));
+        if(first) {
+            dispatchTakePictureIntent();
+        }
     }
 
     @Override
@@ -82,13 +108,14 @@ public class Photo extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Intent next;
         if(resultCode == Activity.RESULT_OK) {
-            switch(requestCode) {
-                case 0: Intent out = new Intent();
-                        out.putExtra("photo-path", mCurrentPhotoPath);
-                        setResult(Activity.RESULT_OK, out);
-                        finish();
-                        break;
+            if (requestCode == 0) {
+                next = new Intent(getApplicationContext(), Calibrate.class);
+                next.putExtra(INT_1, 1);
+                startService(next);
+            } else {
+                System.err.println("Bad code.");
             }
         }
     }

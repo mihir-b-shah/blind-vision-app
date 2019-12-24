@@ -16,7 +16,6 @@ public class ArduinoSensor extends AppCompatActivity {
     private Handler hand = new Handler();
     private String curr;
     private byte[] buf;
-    private SignalProcess signal;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -24,7 +23,6 @@ public class ArduinoSensor extends AppCompatActivity {
         tv = (TextView) findViewById(R.id.textView);
         phy = new Physicaloid(this);
         phy.setBaudrate(9600);
-        signal = new SignalProcess();
         if(phy.open()) {
             phy.addReadListener(new ReadLisener() {
                 @Override

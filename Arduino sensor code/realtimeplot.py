@@ -15,8 +15,6 @@ while(line != ""):
     if(keyboard.is_pressed('q')):
        break
     line = str(ard.readline())
-    if(line[0]!="b"):
-        continue
     ctr += 1
     print(line[2:len(line)-5])
     # process

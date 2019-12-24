@@ -18,4 +18,5 @@
     <string name="title_activity_spell_check">SpellCheck</string>
     <string name="title_activity_orient">Orient</string>
     <string name="title_activity_calibrate">Calibrate</string>
+    <string name="title_activity_calibrate_help">CalibrateHelp</string>
 </resources>

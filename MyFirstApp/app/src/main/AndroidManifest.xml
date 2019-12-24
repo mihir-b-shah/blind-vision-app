@@ -36,29 +36,31 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <service
+            android:name=".CalibrateHelp"
+            android:enabled="true"
+            android:exported="true"></service>
+        <service
+            android:name=".Calibrate"
+            android:enabled="true"
+            android:exported="true" />
+        <service
+            android:name=".Converge"
+            android:exported="false" />
+        <service
+            android:name=".CallAPI"
+            android:exported="false" />
+        <service
+            android:name=".Speak"
+            android:exported="false" />
         <activity
             android:name=".WordInput"
             android:label="@string/title_activity_word_input"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
-
-        <service
+            android:theme="@style/AppTheme.NoActionBar" />
+        <!--<service
             android:name=".WordInput"
             android:enabled="true"
-            android:exported="true" />
-
-        <activity
-            android:name=".Calibrate"
-            android:label="@string/title_activity_calibrate"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".Orient"
-            android:label="@string/title_activity_orient"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity android:name=".ConvgAnnot" />
-        <activity
-            android:name=".SpellCheck"
-            android:label="@string/title_activity_spell_check"
-            android:theme="@style/AppTheme.NoActionBar" />
+            android:exported="true" /> -->
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -80,26 +82,13 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
-        <activity
-            android:name=".Speak"
-            android:label="@string/title_activity_speak"
-            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".Photo"
             android:label="@string/title_activity_photo"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".CallGAPI"
-            android:label="@string/title_activity_call_api"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
             android:name=".Navigate"
             android:label="@string/title_activity_navigate"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".SensorEvent"
-            android:label="@string/title_activity_sensor_event"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ArduinoSensor"
