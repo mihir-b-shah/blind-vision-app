@@ -12,8 +12,7 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
-
-import java.util.Arrays;
+import android.widget.Toast;
 
 /*
 1. Should manage the main sequence UI.
@@ -108,16 +107,26 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(st);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
+
+        mCurrentPhotoPath = st == null ? null : st.getString("photo-path");
+        spkText = st == null ? null : st.getString("spk-text");
+        first = st == null;
+
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
+                receiver, new IntentFilter(SERVICE_RESPONSE));
+
+        // below this change for testing
+
+        Intent start = new Intent(getApplicationContext(), ArduinoSensor.class);
+        start.putExtra(INT_1, 10);
+        startService(start);
+
+        /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        mCurrentPhotoPath = st == null ? null : st.getString("photo-path");
-        spkText = st == null ? null : st.getString("spk-text");
-        first = st == null;
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
-                receiver, new IntentFilter(SERVICE_RESPONSE));
-        if(first) startService(start);
+        if(first) startService(start); */
     }
 
     @Override
