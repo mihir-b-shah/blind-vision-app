@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import static com.example.myfirstapp.MainActivity.FLOAT_1;
 import static com.example.myfirstapp.MainActivity.INT_1;
 import static com.example.myfirstapp.MainActivity.SERVICE_RESPONSE;
 
@@ -26,6 +27,7 @@ public class Photo extends AppCompatActivity {
 
     private String mCurrentPhotoPath;
     private boolean first;
+    private float a0;
 
     public static void adjust(Annotation annot) {
         // 1920 vs 1080 bitmap size
@@ -53,6 +55,7 @@ public class Photo extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle st) {
         super.onCreate(st);
+        a0 = getIntent().getFloatExtra(FLOAT_1, -1);
         setContentView(R.layout.activity_photo);
         mCurrentPhotoPath = st != null ? st.getString("photo-path") : null;
         first = st == null;
@@ -113,6 +116,7 @@ public class Photo extends AppCompatActivity {
             if (requestCode == 0) {
                 next = new Intent(getApplicationContext(), Calibrate.class);
                 next.putExtra(INT_1, 1);
+                next.putExtra(FLOAT_1, a0);
                 startService(next);
             } else {
                 System.err.println("Bad code.");

@@ -12,7 +12,6 @@ import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
-import android.widget.Toast;
 
 /*
 1. Should manage the main sequence UI.
@@ -26,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String SERVICE_RESPONSE;
     public static final String INT_1;
     public static final String INT_2;
+    public static final String FLOAT_1;
 
     static {
         STRING_1 = "string1_8941930";
@@ -34,10 +34,12 @@ public class MainActivity extends AppCompatActivity {
         SERVICE_RESPONSE = "stringG1_32932093";
         INT_1 = "int1_4390403";
         INT_2 = "int2_1201021";
+        FLOAT_1 = "float1_7864059";
     }
 
     private Session session;
     private float[] calibrVect;
+    private float initDir;
     private String spkText;
     private Annotation convgd;
     private String adjectives;
@@ -62,8 +64,9 @@ public class MainActivity extends AppCompatActivity {
                         startService(next);
                         break;
                     case 3:
-                        calibrVect = intent.getFloatArrayExtra("vector");
+                        initDir = intent.getFloatExtra("currdir", Calibrate.DIR_NOTEXIST);
                         next = new Intent(getApplicationContext(), Photo.class);
+                        next.putExtra(FLOAT_1, initDir);
                         startActivityForResult(next, 4);
                         break;
                     case 5:
@@ -111,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
         mCurrentPhotoPath = st == null ? null : st.getString("photo-path");
         spkText = st == null ? null : st.getString("spk-text");
         first = st == null;
+        initDir = st == null ? Calibrate.DIR_NOTEXIST : st.getFloat("init-dir");
 
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
@@ -134,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
         super.onSaveInstanceState(b);
         b.putString("photo-path", mCurrentPhotoPath);
         b.putString("spk-text", spkText);
+        b.putFloat("init-dir", initDir);
     }
 
     @Override

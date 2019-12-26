@@ -1,6 +1,5 @@
 package com.example.myfirstapp;
 
-import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -13,16 +12,24 @@ import android.support.v4.content.LocalBroadcastManager;
 
 import androidx.annotation.Nullable;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Arrays;
 
+import static com.example.myfirstapp.MainActivity.FLOAT_1;
 import static com.example.myfirstapp.MainActivity.INT_1;
+import static java.lang.Math.*;
 
 public class Calibrate extends Service implements SensorEventListener {
 
+    public static final float DIR_NOTEXIST = -100f;
     private SensorManager mSensorManager;
     private Sensor[] sensors;
     private float[][] data;
     private boolean set;
+    private float initDir;
     private int ctr;
     private int id;
 
@@ -36,6 +43,7 @@ public class Calibrate extends Service implements SensorEventListener {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         id = intent.getIntExtra(INT_1, -1);
+        initDir = intent.getFloatExtra(FLOAT_1,DIR_NOTEXIST);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         sensors = new Sensor[2];
         sensors[0] = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -93,7 +101,11 @@ public class Calibrate extends Service implements SensorEventListener {
             mSensorManager.unregisterListener(this, sensors[0]);
             mSensorManager.unregisterListener(this, sensors[1]);
 
-            out.putExtra("vector", orientationValues);
+            if(initDir == DIR_NOTEXIST) {
+                out.putExtra("currdir", orientationValues[0]);
+            } else {
+                out.putExtra("vector", new DirVector(orientationValues, initDir));
+            }
             out.putExtra(INT_1, id);
             LocalBroadcastManager.getInstance(getApplicationContext())
                     .sendBroadcast(out);
@@ -114,6 +126,36 @@ public class Calibrate extends Service implements SensorEventListener {
         return true;
     }
 
+    public class DirVector implements Serializable {
+        private float x,y,z;
+
+        public DirVector() {}
+        public DirVector(float[] APR, float a0) {
+            update(APR, a0);
+        }
+
+        public float getX() {return x;}
+        public float getY() {return y;}
+        public float getZ() {return z;}
+
+        public void update(float[] APR, float a0) {
+            x = (float) (cos(APR[0]-a0)*sin(APR[2])-sin(APR[0]-a0)*sin(APR[1])*cos(APR[2]));
+            y = (float) (-sin(APR[0]-a0)*sin(APR[2])-cos(APR[0]-a0)*sin(APR[1])*cos(APR[2]));
+            z = (float) (cos(APR[1])*cos(APR[2]));
+        }
+
+        private void writeObject(ObjectOutputStream oos) throws IOException {
+            oos.writeFloat(x);
+            oos.writeFloat(y);
+            oos.writeFloat(z);
+        }
+
+        private void readObject(ObjectInputStream ois) throws IOException {
+            x = ois.readFloat();
+            y = ois.readFloat();
+            z = ois.readFloat();
+        }
+    }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {}
