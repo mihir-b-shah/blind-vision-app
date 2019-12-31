@@ -36,10 +36,15 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity
+            android:name=".ArduinoSensor"
+            android:label="ArduinoSensor"
+            android:theme="@style/AppTheme.NoActionBar" />
+
         <service
             android:name=".CalibrateHelp"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
         <service
             android:name=".Calibrate"
             android:enabled="true"
@@ -53,14 +58,17 @@
         <service
             android:name=".Speak"
             android:exported="false" />
+
         <activity
             android:name=".WordInput"
             android:label="@string/title_activity_word_input"
             android:theme="@style/AppTheme.NoActionBar" />
-        <!--<service
+        <!--
+<service
             android:name=".WordInput"
             android:enabled="true"
-            android:exported="true" /> -->
+            android:exported="true" />
+        -->
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -82,17 +90,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
         <activity
             android:name=".Photo"
             android:label="@string/title_activity_photo"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".Navigate"
-            android:label="@string/title_activity_navigate"
-            android:theme="@style/AppTheme.NoActionBar" />
-        <activity
-            android:name=".ArduinoSensor"
-            android:label="@string/title_activity_arduino_sensor"
             android:theme="@style/AppTheme.NoActionBar" />
     </application>
 

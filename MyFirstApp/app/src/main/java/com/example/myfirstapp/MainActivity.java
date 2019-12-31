@@ -122,15 +122,15 @@ public class MainActivity extends AppCompatActivity {
         // below this change for testing
 
         Intent start = new Intent(getApplicationContext(), ArduinoSensor.class);
-        start.putExtra(INT_1, 10);
-        startService(start);
+        startActivityForResult(start, 10);
 
         /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        if(first) startService(start); */
+        if(first) startService(start);
+         */
     }
 
     @Override

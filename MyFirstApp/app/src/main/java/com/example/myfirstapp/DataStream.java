@@ -1,5 +1,7 @@
 package com.example.myfirstapp;
 
+import android.util.Log;
+
 import static java.lang.Math.*;
 
 public class DataStream {
@@ -71,6 +73,7 @@ public class DataStream {
     }
 
     public void pushTrain(int time, final byte[] bytes, int LIM) {
+        Log.d("Val", new String(bytes));
         int val = parseBytes(bytes, LIM);
         noiseMean += val;
         noiseMeanSQ += val*val;

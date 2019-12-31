@@ -54,8 +54,7 @@ dependencies {
     implementation 'com.google.api-client:google-api-client-android:1.25.0'
     implementation 'com.google.apis:google-api-services-vision:v1-rev404-1.25.0'
     implementation 'com.google.code.findbugs:jsr305:2.0.1'
-    implementation files('libs/commons-math3-3.0.jar')
-    implementation files('libs/FNM9MXQIJUCPKBD.jar')
+    implementation files('libs/PhysicaloidJAR.jar')
 }
 
 apply plugin: 'com.google.gms.google-services'

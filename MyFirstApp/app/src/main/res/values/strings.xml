@@ -19,4 +19,6 @@
     <string name="title_activity_orient">Orient</string>
     <string name="title_activity_calibrate">Calibrate</string>
     <string name="title_activity_calibrate_help">CalibrateHelp</string>
+    <string name="title_activity_test_sensor">TestSensor</string>
+    <string name="title_activity_arduino_interface">ArduinoInterface</string>
 </resources>
