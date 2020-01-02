@@ -1,30 +1,88 @@
 package com.example.myfirstapp;
 
 import android.util.Log;
-
+import java.io.IOException;
 import static java.lang.Math.*;
 
 public class DataStream {
-    private int slope; // last nonzero slope
-    private int curr;
-    private int timeLast;
-
     private float threshold;
-    private float zError;
 
     private float noiseMean;
     private float noiseMeanSQ;
     private float noiseSD;
     private int noiseCount;
+    private boolean real;
 
     private final SpeedListener listener;
-
     private static final float PI_SQRT = (float) sqrt(2*PI);
+    private final IntStack stack;
+
+    private class IntStack {
+        private int[] stack;
+        private int pos;
+
+        public IntStack(int capacity) {
+            stack = new int[capacity];
+        }
+
+        public void push(int val) {
+            stack[pos++] = val;
+        }
+
+        public void pop() {
+            --pos;
+        }
+
+        public int top() {
+            return stack[pos-1];
+        }
+
+        public int extract() {
+            return stack[--pos];
+        }
+
+        public int size() {
+            return pos;
+        }
+
+        public void setSize(int size) {pos = size;}
+
+        public void clear() {
+            pos = 0;
+        }
+
+        public int at(int i) {
+            return stack[i];
+        }
+
+        public void set(int idx, int val) {stack[idx] = val;}
+
+        public void move(int src, int dest) {
+            stack[dest] = stack[src];
+        }
+
+        public byte compare(int src, int dest) {
+            return (byte) (Integer.compare(stack[src], stack[dest]));
+        }
+
+        public boolean isNoise() {
+            return abs(stack[4]-stack[2]) <= threshold;
+        }
+
+        public boolean corner() {
+            return signum(stack[4]-stack[2]) == -signum(stack[2]-stack[0]);
+        }
+
+        public int capacity() {
+            return stack.length;
+        }
+    }
 
     public DataStream(float thr, SpeedListener listener) {
-        curr = -1;
         threshold = thr;
         this.listener = listener;
+        stack = new IntStack(5);
+        stack.push(0);
     }
 
     private float erfIntegral(float upper) {
@@ -35,7 +93,7 @@ public class DataStream {
     private float erfIntegralHelper(float upper) {
         float sum = 0;
         float term = 1;
-        for(int i = 1; term>zError; ++i) {
+        for(int i = 1; term>threshold; ++i) {
             term *= upper*upper/(4*i)*(1-2/(2f*i+1));
             sum += term;
         }
@@ -49,7 +107,7 @@ public class DataStream {
         float mid = 0f;
         float res;
 
-        while(upper-lower>zError) {
+        while(upper-lower>threshold) {
             mid = (lower+upper)/2;
             res = erfIntegral(mid);
             if(res > threshold) {
@@ -62,54 +120,75 @@ public class DataStream {
         return mid;
     }
 
-    public static int parseBytes(final byte[] bytes, int LIM) {
-        int iter = 0;
-        int val = 0;
-        while(iter < bytes.length && bytes[iter] != 0) {
-            val *= 10;
-            val += bytes[iter]-'0';
+    private static int parseBytes(final byte[] bytes, int OFFSET, int LIM) throws IOException {
+        if(BuildConfig.DEBUG && LIM != 3) {
+            throw new IOException("Byte length not 3.");
         }
-        return val;
+        if(bytes[OFFSET]==-1) {
+            return -1;
+        } return bytes[OFFSET] + (bytes[OFFSET+1] << 7) + (bytes[OFFSET+2] << 14);
     }
 
-    public void pushTrain(int time, final byte[] bytes, int LIM) {
-        Log.d("Val", new String(bytes));
-        int val = parseBytes(bytes, LIM);
-        noiseMean += val;
-        noiseMeanSQ += val*val;
-        ++noiseCount;
-        timeLast = time;
+    public void enqueue(final byte[] buffer, int size) throws IOException {
+        Log.v("Method", String.format("%d,%d",buffer.length,size));
+        for(int i = 0; i<size; i+=3) {
+            int res = parseBytes(buffer, i, 3);
+            Log.v("Received", Integer.toString(res));
+            /*
+            if(res == -1) {
+                real = true;
+                noiseDone();
+            } else {
+                stack.push(res);
+            }
+
+        }
+        if(real) {
+            pushVal();
+        } else {
+            pushTrain(); */
+        }
     }
 
-    public void noiseDone() {
+    private void pushTrain() {
+        if((stack.size()&2) != 0) {
+            int val = stack.extract();
+            stack.move(stack.size()-1, 0);
+            stack.pop();
+            noiseMean += val;
+            noiseMeanSQ += val * val;
+            ++noiseCount;
+        }
+    }
+
+    private void noiseDone() {
         noiseMean /= noiseCount;
         noiseMeanSQ /= noiseCount;
         noiseSD = (float) sqrt(noiseMeanSQ-noiseMean*noiseMean);
-        zError = threshold/noiseSD*PI_SQRT;
+        threshold /= noiseSD*PI_SQRT;
         threshold = genThreshold();
+        stack.move(0,1);
+        stack.set(0, (int) noiseMean);
+        stack.set(2, (int) noiseMean+1); // set up for {mean, time, mean}
     }
 
-    public void pushVal(int time, final byte[] bytes, int LIM) {
-        int val = parseBytes(bytes, LIM);
-        if(!isNoise(val)) return;
-        else {
-            if (signum(val - curr) == -signum(slope)) {
-                int diff = time-timeLast;
-                timeLast = time;
-                listener.speedChanged((float) PI/diff);
-            }
-            int aux = val-curr;
-            slope = aux == 0 ? slope : aux;
-            curr = val;
+    private void pushVal() {
+        if((stack.size() != stack.capacity())) {
+        } else if(stack.isNoise() || !stack.corner()) {
+            stack.pop();
+            stack.pop();
+        } else {
+            stack.move(2,0);
+            stack.move(4,2);
+            listener.speedChanged((float) PI, (stack.at(3)-stack.at(1))/1000);
+            stack.move(1,3);
+            stack.pop();
+            stack.pop();
         }
-    }
-
-    private boolean isNoise(int val) {
-        return val-curr < threshold;
     }
 
     @FunctionalInterface
     public interface SpeedListener {
-        void speedChanged(float omega);
+        void speedChanged(float theta, float time);
     }
 }
