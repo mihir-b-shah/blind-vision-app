@@ -2,6 +2,9 @@ package com.example.myfirstapp;
 
 import android.util.Log;
 import java.io.IOException;
+
+import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
+
 import static java.lang.Math.*;
 
 public class DataStream {
@@ -16,6 +19,7 @@ public class DataStream {
     private final SpeedListener listener;
     private static final float PI_SQRT = (float) sqrt(2*PI);
     private final IntStack stack;
+    private final ByteBuffer queue;
 
     private class IntStack {
         private int[] stack;
@@ -83,6 +87,7 @@ public class DataStream {
         this.listener = listener;
         stack = new IntStack(5);
         stack.push(0);
+        queue = new ByteBuffer(3);
     }
 
     private float erfIntegral(float upper) {
@@ -120,19 +125,39 @@ public class DataStream {
         return mid;
     }
 
-    private static int parseBytes(final byte[] bytes, int OFFSET, int LIM) throws IOException {
-        if(BuildConfig.DEBUG && LIM != 3) {
-            throw new IOException("Byte length not 3.");
-        }
+    private int parseBytes(final byte[] bytes, int OFFSET) throws IOException {
         if(bytes[OFFSET]==-1) {
             return -1;
         } return bytes[OFFSET] + (bytes[OFFSET+1] << 7) + (bytes[OFFSET+2] << 14);
     }
 
+    private int parseQueueBytes(final byte[] bytes) {
+        byte[] buf = queue.getBuffer();
+        final int lim = queue.size();
+        switch(lim) {
+            case 1:
+                if(buf[0] == -1)
+                    return -1;
+                return buf[0] + (bytes[0] << 7) + (bytes[1] << 14);
+            case 2:
+                if(buf[0] == -1)
+                    return -1;
+                return buf[0] + (buf[1] << 7) + (bytes[0] << 14);
+            default:
+                Log.e("Stream error", "Too many bytes in queue.");
+                return -5; // error;
+        }
+    }
+
     public void enqueue(final byte[] buffer, int size) throws IOException {
         Log.v("Method", String.format("%d,%d",buffer.length,size));
-        for(int i = 0; i<size; i+=3) {
-            int res = parseBytes(buffer, i, 3);
+        if(queue.size() != 0) {
+            int res = parseQueueBytes(buffer);
+            Log.v("Received", Integer.toString(res));
+        }
+
+        for(int i = 3-queue.size(); i<size; i+=3) {
+            int res = parseBytes(buffer, i);
             Log.v("Received", Integer.toString(res));
             /*
             if(res == -1) {
@@ -141,13 +166,20 @@ public class DataStream {
             } else {
                 stack.push(res);
             }
-
+        */
         }
+        // queue the remainder
+        int remainder = size%3;
+        if(remainder != 0) {
+            queue.set(remainder);
+            queue.enqueue(buffer, size-remainder, remainder);
+        }
+        /*
         if(real) {
             pushVal();
         } else {
-            pushTrain(); */
-        }
+            pushTrain();
+        } */
     }
 
     private void pushTrain() {

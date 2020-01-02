@@ -28,6 +28,22 @@ public class ByteBuffer {
         }
     }
 
+    public int size() {
+        return size;
+    }
+
+    public void enqueue(byte[] b, int offset, int len) {
+        System.arraycopy(buffer, size, b, offset, len);
+    }
+
+    /**
+     * Assumes already big enough
+     * @param len smaller than capacity
+     */
+    public void set(int len) {
+        size = len;
+    }
+
     public byte[] getBuffer() {
         return buffer;
     }
