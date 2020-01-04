@@ -8,8 +8,6 @@ import android.util.Log;
 import com.physicaloid.lib.Physicaloid;
 import com.physicaloid.lib.usb.driver.uart.ReadLisener;
 
-import java.io.IOException;
-
 public class ArduinoSensor extends AppCompatActivity implements DataStream.SpeedListener {
 
     private Physicaloid phy;
@@ -31,14 +29,10 @@ public class ArduinoSensor extends AppCompatActivity implements DataStream.Speed
             phy.addReadListener(new ReadLisener() {
                 @Override
                 public void onRead(int i) {
-                buf.expand(i);
-                phy.read(buf.getBuffer(), i);
-                Log.v("Buffer val", buf.limString(i));
-                try {
+                    buf.expand(i);
+                    phy.read(buf.getBuffer(), i);
+                    Log.v("Buffer val", buf.limString(i));
                     stream.enqueue(buf.getBuffer(), i);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
                 }
             });
         }
@@ -50,7 +44,7 @@ public class ArduinoSensor extends AppCompatActivity implements DataStream.Speed
     }
 
     @Override
-    public void speedChanged(float theta, float time) {
-        // message the user!
+    public void speedChanged(double theta, double time) {
+        Log.v("Speed chg", String.format("%.3f, %.3f", theta, time));
     }
 }

@@ -1,28 +1,28 @@
 package com.example.myfirstapp;
 
 import android.util.Log;
-import java.io.IOException;
-
-import io.grpc.netty.shaded.io.netty.buffer.ByteBuf;
 
 import static java.lang.Math.*;
 
 public class DataStream {
-    private float threshold;
+    private double threshold;
 
-    private float noiseMean;
-    private float noiseMeanSQ;
-    private float noiseSD;
+    private double noiseMean;
+    private double noiseMeanSQ;
+    private double noiseSD;
     private int noiseCount;
     private boolean real;
 
     private final SpeedListener listener;
-    private static final float PI_SQRT = (float) sqrt(2*PI);
+
+    private static final double RSQRT_2 = 1/sqrt(2);
+    private static final double EPSILON = 1e-5;
+
     private final IntStack stack;
     private final ByteBuffer queue;
 
     private class IntStack {
-        private int[] stack;
+        private final int[] stack;
         private int pos;
 
         public IntStack(int capacity) {
@@ -65,54 +65,54 @@ public class DataStream {
             stack[dest] = stack[src];
         }
 
-        public byte compare(int src, int dest) {
-            return (byte) (Integer.compare(stack[src], stack[dest]));
-        }
-
         public boolean isNoise() {
-            return abs(stack[4]-stack[2]) <= threshold;
+            return stack[2] != -1 && abs(stack[4]-stack[2]) <= threshold;
         }
 
         public boolean corner() {
-            return signum(stack[4]-stack[2]) == -signum(stack[2]-stack[0]);
+            if(stack[2] == -1) {
+                return false;
+            } else return signum(stack[4]-stack[2]) == -signum(stack[2]-stack[0]);
         }
 
         public int capacity() {
             return stack.length;
         }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            for(int i = 0; i<pos; ++i) {
+                sb.append(stack[i]);
+                sb.append(' ');
+            }
+            return sb.toString();
+        }
     }
 
-    public DataStream(float thr, SpeedListener listener) {
+    public DataStream(double thr, SpeedListener listener) {
         threshold = thr;
         this.listener = listener;
         stack = new IntStack(5);
-        stack.push(0);
+        stack.push(0); stack.push(-1);
         queue = new ByteBuffer(3);
     }
 
-    private float erfIntegral(float upper) {
-        return 0.5f + erfIntegralHelper(abs(upper));
+    // pade approximant from https://math.stackexchange.com/questions/1312418/
+    private double erfIntegral(double x) {
+        x *= RSQRT_2;
+        double sq = x*x;
+        return (1+signum(x)*sqrt(1-exp(-(0.0167527*sq*sq+0.160257*sq+1.27324)/
+                (0.0151778*sq*sq+0.155912*sq+1)*sq)))/2;
     }
 
-    // this erf is on (0,1) instead of (-1,1)
-    private float erfIntegralHelper(float upper) {
-        float sum = 0;
-        float term = 1;
-        for(int i = 1; term>threshold; ++i) {
-            term *= upper*upper/(4*i)*(1-2/(2f*i+1));
-            sum += term;
-        }
-        return sum;
-    }
-
-    private float genThreshold() {
+    private double genThreshold() {
         // uses binary search the answer to efficiently compute boundary point
-        float lower = 0f;
-        float upper = 1024f;
-        float mid = 0f;
-        float res;
-
-        while(upper-lower>threshold) {
+        double lower = 0f;
+        double upper = 1024f;
+        double mid = 0f;
+        double res;
+        while(upper-lower>EPSILON) {
             mid = (lower+upper)/2;
             res = erfIntegral(mid);
             if(res > threshold) {
@@ -125,7 +125,7 @@ public class DataStream {
         return mid;
     }
 
-    private int parseBytes(final byte[] bytes, int OFFSET) throws IOException {
+    private int parseBytes(final byte[] bytes, int OFFSET) {
         if(bytes[OFFSET]==-1) {
             return -1;
         } return bytes[OFFSET] + (bytes[OFFSET+1] << 7) + (bytes[OFFSET+2] << 14);
@@ -133,59 +133,77 @@ public class DataStream {
 
     private int parseQueueBytes(final byte[] bytes) {
         byte[] buf = queue.getBuffer();
+        if(buf[0] == -1)
+            return -1;
         final int lim = queue.size();
         switch(lim) {
             case 1:
-                if(buf[0] == -1)
-                    return -1;
                 return buf[0] + (bytes[0] << 7) + (bytes[1] << 14);
             case 2:
-                if(buf[0] == -1)
-                    return -1;
                 return buf[0] + (buf[1] << 7) + (bytes[0] << 14);
             default:
-                Log.e("Stream error", "Too many bytes in queue.");
                 return -5; // error;
         }
     }
 
-    public void enqueue(final byte[] buffer, int size) throws IOException {
-        Log.v("Method", String.format("%d,%d",buffer.length,size));
+    public void enqueue(final byte[] buffer, int size) {
+        if(size + queue.size() < 3) {
+            // queue the data and return
+            for(int i = 0; i<size; ++i) {
+                queue.add(buffer[i]);
+            }
+            return;
+        }
         if(queue.size() != 0) {
             int res = parseQueueBytes(buffer);
             Log.v("Received", Integer.toString(res));
-        }
-
-        for(int i = 3-queue.size(); i<size; i+=3) {
-            int res = parseBytes(buffer, i);
-            Log.v("Received", Integer.toString(res));
-            /*
             if(res == -1) {
                 real = true;
                 noiseDone();
             } else {
                 stack.push(res);
             }
-        */
+            if(real) {
+                pushVal();
+            } else {
+                pushTrain();
+            }
+        }
+
+        final int loopLen = size-3;
+        final int loopStart = (3-queue.size())%3;
+        // qs = 0, i = 0. qs = 1, i = 2, qs = 2, i = 1
+        for(int i = loopStart; i<=loopLen; i+=3) {
+            int res = parseBytes(buffer, i);
+            Log.v("Received", Integer.toString(res));
+            if(res == -1) {
+                real = !real; // in case of second switch
+                noiseDone();
+            } else {
+                stack.push(res);
+                if(real) {
+                    pushVal();
+                } else {
+                    pushTrain();
+                }
+            }
         }
         // queue the remainder
-        int remainder = size%3;
+        int remainder = (queue.size()+size)%3;
         if(remainder != 0) {
-            queue.set(remainder);
             queue.enqueue(buffer, size-remainder, remainder);
-        }
-        /*
-        if(real) {
-            pushVal();
         } else {
-            pushTrain();
-        } */
+            queue.contract(0);
+        }
     }
 
     private void pushTrain() {
-        if((stack.size()&2) != 0) {
-            int val = stack.extract();
-            stack.move(stack.size()-1, 0);
+        if((stack.size()&1) == 0) {
+            int val = abs(stack.top()-
+                    (stack.at(1)==-1 ? stack.top() : stack.at(1)));
+            stack.move(3, 1);
+            stack.move(2, 0);
+            stack.pop();
             stack.pop();
             noiseMean += val;
             noiseMeanSQ += val * val;
@@ -194,33 +212,37 @@ public class DataStream {
     }
 
     private void noiseDone() {
-        noiseMean /= noiseCount;
-        noiseMeanSQ /= noiseCount;
-        noiseSD = (float) sqrt(noiseMeanSQ-noiseMean*noiseMean);
-        threshold /= noiseSD*PI_SQRT;
+        noiseMean /= noiseCount-1;
+        noiseMeanSQ /= noiseCount-1;
+        noiseSD = sqrt(noiseMeanSQ-noiseMean*noiseMean);
         threshold = genThreshold();
-        stack.move(0,1);
-        stack.set(0, (int) noiseMean);
-        stack.set(2, (int) noiseMean+1); // set up for {mean, time, mean}
+        threshold *= noiseSD;
+        int temp = stack.at(1);
+        stack.move(0, 1);
+        stack.set(0, temp);
+        stack.set(2, -1); // set up for {mean, time, mean}
+        stack.setSize(3); // should be init off by 1
     }
 
     private void pushVal() {
+        boolean noise;
         if((stack.size() != stack.capacity())) {
-        } else if(stack.isNoise() || !stack.corner()) {
-            stack.pop();
-            stack.pop();
-        } else {
-            stack.move(2,0);
-            stack.move(4,2);
-            listener.speedChanged((float) PI, (stack.at(3)-stack.at(1))/1000);
-            stack.move(1,3);
-            stack.pop();
-            stack.pop();
+            return;
+        } else if(!(noise = stack.isNoise()) && stack.corner()) {
+            stack.move(2, 0);
+            stack.move(4, 2);
+            listener.speedChanged(PI, (stack.at(3)-stack.at(1))/1000d);
+            stack.move(3, 1);
+        } else if(!noise) {
+            stack.move(4, 2);
         }
+
+        stack.pop();
+        stack.pop();
     }
 
     @FunctionalInterface
     public interface SpeedListener {
-        void speedChanged(float theta, float time);
+        void speedChanged(double theta, double time);
     }
 }

@@ -23,9 +23,13 @@ public class ByteBuffer {
     public void expand(int len) {
         if(len > buffer.length) {
             byte[] aux = new byte[(int) (len*1.5)];
-            System.arraycopy(buffer, 0, aux, 0, len);
+            System.arraycopy(buffer, 0, aux, 0, size);
             buffer = aux;
         }
+    }
+
+    public void contract(int len) {
+        size = len;
     }
 
     public int size() {
@@ -33,14 +37,7 @@ public class ByteBuffer {
     }
 
     public void enqueue(byte[] b, int offset, int len) {
-        System.arraycopy(buffer, size, b, offset, len);
-    }
-
-    /**
-     * Assumes already big enough
-     * @param len smaller than capacity
-     */
-    public void set(int len) {
+        System.arraycopy(b, offset, buffer, 0, len);
         size = len;
     }
 
@@ -48,7 +45,7 @@ public class ByteBuffer {
         return buffer;
     }
     public void clear() {
-        byte b = 0;
+        final byte b = 0;
         Arrays.fill(buffer, b);
     }
 
