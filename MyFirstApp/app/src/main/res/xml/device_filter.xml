@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-</PreferenceScreen>
+<resources>
+    <!-- 9025 is Arduino vendor id-->
+    <usb-device vendor-id="9025"/>
+</resources>

@@ -2,7 +2,7 @@
  * Manages the main UI thread of the application and launches all the sub-activities.
  */
 
-package com.example.myfirstapp;
+package com.apps.navai;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,8 +10,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.appcompat.app.AppCompatActivity;
 
 /*
 1. Should manage the main sequence UI.
@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private String adjectives;
     private String mCurrentPhotoPath;
     private boolean first = true;
-    private float[] photoVect;
+    private Calibrate.DirVector photoVect;
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -70,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
                         startActivityForResult(next, 4);
                         break;
                     case 5:
+                        System.out.println("Got out of CallAPI!");
                         session = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), Converge.class);
                         next.putExtra(STRING_2, session);
@@ -79,10 +80,10 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case 6:
                         session = (Session) intent.getSerializableExtra("session");
-                        Annotation annot = session.get_annotation(0);
+                        Annotation annot = session.getAnnotation(0);
                         boolean right;
-                        if(annot.b.getVertices() != null)
-                            right = annot.b.getVertices().get(0).getX()>960;
+                        if(annot.getRect() != null)
+                            right = annot.getRect().centerX() > session.getImageWidth() >> 1;
                         else
                             right = false;
                         next = new Intent(getApplicationContext(), Speak.class);
@@ -154,11 +155,11 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case 4:
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
-                    photoVect = data.getFloatArrayExtra("vector");
+                    photoVect = (Calibrate.DirVector) data.getSerializableExtra("vector");
                     next = new Intent(getApplicationContext(), CallAPI.class);
                     next.putExtra(STRING_1, mCurrentPhotoPath);
                     next.putExtra(STRING_2, "READFILE");
-                    next.putExtra(STRING_3, (String) null);
+                    next.putExtra(STRING_3, "READFILE");
                     next.putExtra(INT_1, 5);
                     startService(next);
                     break;
