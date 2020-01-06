@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-
-<resources>
-    <!-- 9025 is Arduino vendor id-->
-    <usb-device vendor-id="9025"/>
-</resources>
