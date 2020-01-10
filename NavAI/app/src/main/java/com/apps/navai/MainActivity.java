@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.media.AudioManager;
 import android.os.Bundle;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.appcompat.app.AppCompatActivity;
@@ -44,10 +45,12 @@ public class MainActivity extends AppCompatActivity {
     private Annotation convgd;
     private String adjectives;
     private String mCurrentPhotoPath;
+    private AudioManager audioManager;
     private boolean first = true;
     private Calibrate.DirVector photoVect;
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
+        @SuppressWarnings("deprecation")
         public void onReceive(Context context, Intent intent) {
             if(intent.getAction() != null && intent.getAction().equals(SERVICE_RESPONSE)) {
                 int code = intent.getIntExtra(INT_1, -1);
@@ -106,11 +109,20 @@ public class MainActivity extends AppCompatActivity {
      *
      * @param st the data needed to construct the application.
      */
+    @SuppressWarnings("deprecation")
     @Override
     protected void onCreate(Bundle st) {
         super.onCreate(st);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
+
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+
+        // deprecated but simple
+        if(audioManager.isWiredHeadsetOn()) {
+            audioManager.setMode(AudioManager.MODE_RINGTONE | AudioManager.MODE_IN_CALL);
+            audioManager.setSpeakerphoneOn(true);
+        }
 
         mCurrentPhotoPath = st == null ? null : st.getString("photo-path");
         spkText = st == null ? null : st.getString("spk-text");
@@ -124,13 +136,27 @@ public class MainActivity extends AppCompatActivity {
         /*
         Intent start = new Intent(getApplicationContext(), ArduinoSensor.class);
         startActivityForResult(start, 10);
-        */
+
 
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
         if(first) startService(start);
+         */
+        Intent start = new Intent(getApplicationContext(), CustomCamera.class);
+        startActivityForResult(start, 10);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if(audioManager.getMode() != AudioManager.MODE_NORMAL ||
+                audioManager.isWiredHeadsetOn()) {
+            audioManager.setMode(AudioManager.MODE_NORMAL);
+            audioManager.setSpeakerphoneOn(false);
+        }
+        unregisterReceiver(receiver);
     }
 
     @Override

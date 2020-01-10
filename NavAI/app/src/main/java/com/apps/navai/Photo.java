@@ -49,28 +49,30 @@ public class Photo extends AppCompatActivity {
         b.putString("photo-path", mCurrentPhotoPath);
     }
 
+    // this will cause memory leaks...
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-        if(intent.getAction() != null && intent.getAction().equals(SERVICE_RESPONSE)) {
-            int code = intent.getIntExtra(INT_1, -1);
-            if (code == 1) {
-                Calibrate.DirVector vect = (Calibrate.DirVector)
-                        intent.getSerializableExtra("vector");
-                System.out.println("Got the dir vector!");
-                Intent next = new Intent();
-                next.putExtra("photo-path", mCurrentPhotoPath);
-                next.putExtra("vector", vect);
-                Photo.this.setResult(Activity.RESULT_OK, next);
-                Photo.this.finish();
+            if(intent.getAction() != null && intent.getAction().equals(SERVICE_RESPONSE)) {
+                int code = intent.getIntExtra(INT_1, -1);
+                if (code == 1) {
+                    Calibrate.DirVector vect = (Calibrate.DirVector)
+                            intent.getSerializableExtra("vector");
+                    System.out.println("Got the dir vector!");
+                    Intent next = new Intent();
+                    next.putExtra("photo-path", mCurrentPhotoPath);
+                    next.putExtra("vector", vect);
+                    Photo.this.setResult(Activity.RESULT_OK, next);
+                    Photo.this.finish();
+                }
             }
-        }
         }
     };
 
     private void dispatchTakePictureIntent() {
         first = false;
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        takePictureIntent.putExtra("android.intent.extra.quickCapture",true);
 
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
             // Create the File where the photo should go
