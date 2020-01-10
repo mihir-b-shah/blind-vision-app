@@ -83,10 +83,10 @@ public class CircularBuffer {
 
     // inline this hopefully?
     private final int reverse(int len, int bits) {
-        bits = (bits & 0x5555) << 1 | (bits & 0xAAAA) >> 1;
-        bits = (bits & 0x3333) << 2 | (bits & 0xCCCC) >> 2;
-        bits = (bits & 0x0F0F) << 4 | (bits & 0xF0F0) >> 4;
-        bits = (bits & 0x00FF) << 8 | (bits & 0xFF00) >> 8;
+        bits = (bits & 0x5555) << 1 | (bits & 0xAAAA) >>> 1;
+        bits = (bits & 0x3333) << 2 | (bits & 0xCCCC) >>> 2;
+        bits = (bits & 0x0F0F) << 4 | (bits & 0xF0F0) >>> 4;
+        bits = (bits & 0x00FF) << 8 | (bits & 0xFF00) >>> 8;
         return bits >>> 16-len;
     }
 
