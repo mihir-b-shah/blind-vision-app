@@ -1,7 +1,5 @@
 package com.apps.navai;
 
-import android.util.Log;
-
 import static java.lang.Math.*;
 
 public class DataStream {
@@ -17,9 +15,11 @@ public class DataStream {
 
     private static final double RSQRT_2 = 1/sqrt(2);
     private static final double EPSILON = 1e-5;
+    private static final double SAMPLING_FREQ = 0.1;
 
     private final IntStack stack;
     private final ByteBuffer queue;
+    private final CircularBuffer buffer;
 
     private class IntStack {
         private final int[] stack;
@@ -66,7 +66,7 @@ public class DataStream {
         }
 
         public boolean isNoise() {
-            return stack[2] != -1 && abs(stack[4]-stack[2]) <= threshold;
+            return stack[2] == -1 ? false : abs(stack[4]-stack[2]) <= threshold;
         }
 
         public boolean corner() {
@@ -96,6 +96,7 @@ public class DataStream {
         stack = new IntStack(5);
         stack.push(0); stack.push(-1);
         queue = new ByteBuffer(3);
+        buffer = new CircularBuffer(64);
     }
 
     // pade approximant from https://math.stackexchange.com/questions/1312418/
@@ -156,7 +157,6 @@ public class DataStream {
         }
         if(queue.size() != 0) {
             int res = parseQueueBytes(buffer);
-            Log.v("Received", Integer.toString(res));
             if(res == -1) {
                 real = true;
                 noiseDone();
@@ -175,7 +175,6 @@ public class DataStream {
         // qs = 0, i = 0. qs = 1, i = 2, qs = 2, i = 1
         for(int i = loopStart; i<=loopLen; i+=3) {
             int res = parseBytes(buffer, i);
-            Log.v("Received", Integer.toString(res));
             if(res == -1) {
                 real = !real; // in case of second switch
                 noiseDone();
@@ -199,6 +198,7 @@ public class DataStream {
 
     private void pushTrain() {
         if((stack.size()&1) == 0) {
+            buffer.write(stack.top());
             int val = abs(stack.top()-
                     (stack.at(1)==-1 ? stack.top() : stack.at(1)));
             stack.move(3, 1);
@@ -212,6 +212,8 @@ public class DataStream {
     }
 
     private void noiseDone() {
+        double noiseFreq = buffer.dominantFreq()*SAMPLING_FREQ;
+        System.out.println(noiseFreq);
         noiseMean /= noiseCount-1;
         noiseMeanSQ /= noiseCount-1;
         noiseSD = sqrt(noiseMeanSQ-noiseMean*noiseMean);

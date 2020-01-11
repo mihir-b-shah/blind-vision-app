@@ -2,6 +2,7 @@ package com.apps.navai;
 
 import static java.lang.Math.*;
 import java.nio.BufferOverflowException;
+import java.util.Arrays;
 
 public class CircularBuffer {
     private static final int MAX_SIZE = 0x8000;
@@ -17,11 +18,12 @@ public class CircularBuffer {
     public CircularBuffer(int N) {
         if(N > MAX_SIZE)
             throw new BufferOverflowException();
+        final int NBSL = N<<1;
         this.N = N;
         LOGN = Integer.numberOfTrailingZeros(N);
-        data = new int[N];
-        MASK = (1<<N)-1;
-        freqs = new double[N << 1];
+        data = new int[NBSL];
+        MASK = NBSL-1;
+        freqs = new double[NBSL];
         trigCache = new double[N];
 
         final int NBS = N >>> 1;
@@ -34,10 +36,12 @@ public class CircularBuffer {
 
     public void write(int val) {
         data[writePtr++ & MASK] = val;
+        data[writePtr++ & MASK] = 0;
     }
 
-    public float dominantFreq() {
+    public double dominantFreq() {
         fft(0, 0);
+        System.out.println(Arrays.toString(freqs));
         int IBS;
         final int LEN = 1+(N >>> 1);
         int idx = 1;
@@ -52,7 +56,8 @@ public class CircularBuffer {
             }
         }
 
-        return (float) PI*idx;
+        int OBS = 32-LOGN;
+        return (double) N/(idx << OBS >> OBS);
     }
 
     private void fft(int start, int lvl) {
