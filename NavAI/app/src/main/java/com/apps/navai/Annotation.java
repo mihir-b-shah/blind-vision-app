@@ -44,6 +44,7 @@ public class Annotation implements Serializable,Comparable<Annotation> {
                 e.printStackTrace();
             }
         }
+
         if(task.isCanceled() || !task.isSuccessful()) {
             System.err.printf("Image labeling for image not work.%n");
         }

@@ -2,18 +2,21 @@ package com.apps.navai;
 
 import static java.lang.Math.*;
 import java.nio.BufferOverflowException;
-import java.util.Arrays;
 
+// contains signal processing methods.
 public class CircularBuffer {
     private static final int MAX_SIZE = 0x8000;
-    private final int[] data;
+    private final double[] data;
     private final double[] freqs;
     private final double[] trigCache;
+    private final double[] cpxCache;
 
     private final int N;
     private final int LOGN;
     private final int MASK;
+
     private int writePtr;
+    private int domIndex;
 
     public CircularBuffer(int N) {
         if(N > MAX_SIZE)
@@ -21,27 +24,42 @@ public class CircularBuffer {
         final int NBSL = N<<1;
         this.N = N;
         LOGN = Integer.numberOfTrailingZeros(N);
-        data = new int[NBSL];
+        data = new double[NBSL];
         MASK = NBSL-1;
         freqs = new double[NBSL];
         trigCache = new double[N];
 
         final int NBS = N >>> 1;
         for(int i = 0; i< NBS; ++i) {
-            int IBS = i << 1;
+            final int IBS = i << 1;
             trigCache[IBS] = cos(i*PI/NBS);
             trigCache[1+IBS] = -sqrt(1-pow(trigCache[IBS],2));
+        }
+
+        // Store W and W^3 for each N.
+        cpxCache = new double[NBSL];
+        final double BASE = PI/NBS;
+        int pos;
+        for(int i = 1; i<N; ++i) {
+            pos = i << 1;
+            cpxCache[pos] = cos(i*BASE);
+            cpxCache[pos+1] = sin(i*BASE);
         }
     }
 
     public void write(int val) {
         data[writePtr++ & MASK] = val;
-        data[writePtr++ & MASK] = 0;
+        data[writePtr++ & MASK] = 0d;
     }
 
-    public double dominantFreq() {
+    public void writeFilter(int val) {
+        double fval = filter(val);
+        data[writePtr++ & MASK] = fval;
+        data[writePtr++ & MASK] = 0d;
+    }
+
+    public void setDominantFreq() {
         fft(0, 0);
-        System.out.println(Arrays.toString(freqs));
         int IBS;
         final int LEN = 1+(N >>> 1);
         int idx = 1;
@@ -57,7 +75,32 @@ public class CircularBuffer {
         }
 
         int OBS = 32-LOGN;
-        return (double) N/(idx << OBS >> OBS);
+        domIndex = idx << OBS >> OBS;
+    }
+
+    /**
+     * Called after fft() and before respective write() call.
+     *
+     * @param newVal the new signal value.
+     * @return the filtered value.
+     */
+    private double filter(int newVal) {
+        // perform the dft on the new values
+        for(int i = 0; i<N; ++i) {
+            int pos = i << 1;
+            freqs[pos] += newVal - data[writePtr & MASK];
+            double temp = freqs[pos];
+            freqs[pos] = cpxCache[pos]*freqs[pos]-cpxCache[pos+1]*freqs[pos+1];
+            freqs[pos+1] = cpxCache[pos+1]*temp+cpxCache[pos]*freqs[pos+1];
+        }
+
+        double real = 0;
+        for(int i = domIndex+1; i<N; ++i) {
+            int pos = i << 1;
+            real += cpxCache[pos]*freqs[pos+1]-cpxCache[pos+1]*freqs[pos];
+        }
+        System.out.printf("%d->%.3f%n", newVal, real/N);
+        return real/N;
     }
 
     private void fft(int start, int lvl) {

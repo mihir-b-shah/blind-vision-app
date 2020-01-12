@@ -212,8 +212,7 @@ public class DataStream {
     }
 
     private void noiseDone() {
-        double noiseFreq = buffer.dominantFreq()*SAMPLING_FREQ;
-        System.out.println(noiseFreq);
+        buffer.setDominantFreq();
         noiseMean /= noiseCount-1;
         noiseMeanSQ /= noiseCount-1;
         noiseSD = sqrt(noiseMeanSQ-noiseMean*noiseMean);
@@ -239,6 +238,7 @@ public class DataStream {
             stack.move(4, 2);
         }
 
+        buffer.writeFilter(stack.top());
         stack.pop();
         stack.pop();
     }

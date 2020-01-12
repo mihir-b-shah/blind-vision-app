@@ -116,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
 
+        /*
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
         // deprecated but simple
@@ -123,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
             audioManager.setMode(AudioManager.MODE_RINGTONE | AudioManager.MODE_IN_CALL);
             audioManager.setSpeakerphoneOn(true);
         }
-
+        */
         mCurrentPhotoPath = st == null ? null : st.getString("photo-path");
         spkText = st == null ? null : st.getString("spk-text");
         first = st == null;
@@ -144,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
         start.putExtra(INT_1, 0);
         if(first) startService(start);
          */
+
         Intent start = new Intent(getApplicationContext(), CustomCamera.class);
         startActivityForResult(start, 10);
     }
@@ -189,6 +191,8 @@ public class MainActivity extends AppCompatActivity {
                     next.putExtra(INT_1, 5);
                     startService(next);
                     break;
+                case 10:
+                    System.out.println("WE BACK YEEEET!");
                 default:
                     System.err.println("Code not recognized.");
                     break;
