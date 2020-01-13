@@ -68,9 +68,9 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case 3:
                         initDir = intent.getFloatExtra("currdir", Calibrate.DIR_NOTEXIST);
-                        next = new Intent(getApplicationContext(), Photo.class);
+                        next = new Intent(getApplicationContext(), CustomCamera.class);
                         next.putExtra(FLOAT_1, initDir);
-                        startActivityForResult(next, 4);
+                        startActivityForResult(next, 12);
                         break;
                     case 5:
                         System.out.println("Got out of CallAPI!");
@@ -116,7 +116,6 @@ public class MainActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
 
-        /*
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
         // deprecated but simple
@@ -124,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
             audioManager.setMode(AudioManager.MODE_RINGTONE | AudioManager.MODE_IN_CALL);
             audioManager.setSpeakerphoneOn(true);
         }
-        */
+
         mCurrentPhotoPath = st == null ? null : st.getString("photo-path");
         spkText = st == null ? null : st.getString("spk-text");
         first = st == null;
@@ -137,17 +136,16 @@ public class MainActivity extends AppCompatActivity {
         /*
         Intent start = new Intent(getApplicationContext(), ArduinoSensor.class);
         startActivityForResult(start, 10);
-
-
+        */
+/*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        if(first) startService(start);
-         */
+        if(first) startService(start); */
 
         Intent start = new Intent(getApplicationContext(), CustomCamera.class);
-        startActivityForResult(start, 10);
+        startActivityForResult(start, 13);
     }
 
     @Override
@@ -158,7 +156,6 @@ public class MainActivity extends AppCompatActivity {
             audioManager.setMode(AudioManager.MODE_NORMAL);
             audioManager.setSpeakerphoneOn(false);
         }
-        unregisterReceiver(receiver);
     }
 
     @Override
@@ -187,12 +184,10 @@ public class MainActivity extends AppCompatActivity {
                     next = new Intent(getApplicationContext(), CallAPI.class);
                     next.putExtra(STRING_1, mCurrentPhotoPath);
                     next.putExtra(STRING_2, "READFILE");
-                    next.putExtra(STRING_3, "READFILE");
+                    next.putExtra(STRING_3, (String) null);
                     next.putExtra(INT_1, 5);
                     startService(next);
                     break;
-                case 10:
-                    System.out.println("WE BACK YEEEET!");
                 default:
                     System.err.println("Code not recognized.");
                     break;

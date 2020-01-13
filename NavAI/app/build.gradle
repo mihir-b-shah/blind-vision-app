@@ -31,10 +31,12 @@ dependencies {
     implementation 'com.google.firebase:firebase-ml-vision:24.0.1'
     implementation 'com.google.firebase:firebase-ml-vision-object-detection-model:19.0.3'
     implementation 'com.google.firebase:firebase-ml-vision-image-label-model:19.0.0'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
     implementation files('libs/PhysicaloidJAR.jar')
+    implementation files('libs/ezcam-2.3-sources.jar')
 }
 
 apply plugin: 'com.google.gms.google-services'
