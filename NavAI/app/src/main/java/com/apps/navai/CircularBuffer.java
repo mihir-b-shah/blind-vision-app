@@ -3,13 +3,17 @@ package com.apps.navai;
 import static java.lang.Math.*;
 import java.nio.BufferOverflowException;
 
-// contains signal processing methods.
+/* Currently since I'm using the naive matrix solve,
+64 or 128 is the max value that can be used with filtering for this buffer. */
+
 public class CircularBuffer {
     private static final int MAX_SIZE = 0x8000;
+    private static final double EPS = 1e-7;
+
     private final double[] data;
     private final double[] freqs;
     private final double[] trigCache;
-    private final double[] cpxCache;
+    private final double[] kernel;
 
     private final int N;
     private final int LOGN;
@@ -36,15 +40,75 @@ public class CircularBuffer {
             trigCache[1+IBS] = -sqrt(1-pow(trigCache[IBS],2));
         }
 
-        // Store W and W^3 for each N.
-        cpxCache = new double[NBSL];
-        final double BASE = PI/NBS;
-        int pos;
-        for(int i = 1; i<N; ++i) {
-            pos = i << 1;
-            cpxCache[pos] = cos(i*BASE);
-            cpxCache[pos+1] = sin(i*BASE);
+        // build the kernel
+        kernel = new double[N-1];
+    }
+
+    private static void naiveSolve(double[] mat, double[] res) {
+        final int SIZE = res.length;
+        outer: for(int i = 0; i<SIZE; ++i) {
+            for(int j = 0; j<i; ++j) {
+                int pos = i-1;
+                if(abs(mat[SIZE*i+j]) > EPS) {
+                    while(abs(mat[SIZE*pos+j]) < EPS) {
+                        --pos;
+                    }
+                    double mult = mat[SIZE*i+j]/mat[SIZE*pos+j];
+                    for(int k = 0; k<SIZE; ++k) {
+                        mat[SIZE*i+k] -= mult*mat[SIZE*pos+k];
+                    }
+                    res[i] -= mult*res[pos];
+                }
+            }
+            if(abs(mat[i*(SIZE+1)]-1d) > EPS) {
+                double mult = 1/mat[(SIZE+1)*i];
+                for(int c = 0; c<SIZE; ++c) {
+                    mat[SIZE*i+c] *= mult;
+                }
+                res[i] *= mult;
+            }
         }
+
+        for(int i = SIZE-2; i>=0; --i) {
+            for(int j = i+1; j<SIZE; ++j) {
+                double mult = mat[SIZE*i+j]/mat[(SIZE+1)*j];
+                for(int k = 0; k<SIZE; ++k) {
+                    mat[SIZE*i+k] -= mult*mat[SIZE*j+k];
+                }
+                res[i] -= mult*res[j];
+            }
+        }
+    }
+
+    private double lsqFilter() {
+        final int LIM = N >>> 1;
+        double sum = 0;
+        final int START = writePtr-1;
+        for(int i = 0; i<LIM; ++i) {
+            sum += data[START-(i >> 1) & MASK]*kernel[i];
+        }
+        return sum;
+    }
+
+    private double[] buildAvgMatrix(double[] row) {
+        final int SIZE = 1+(row.length >>> 1);
+        final double[] mat = new double[SIZE*SIZE];
+
+        for(int i = 0; i<SIZE; ++i) {
+            for(int j = 0; j<SIZE; ++j) {
+                mat[SIZE*i+j] = (row[i+j]+row[abs(i-j)])/2;
+            }
+        }
+
+        return mat;
+    }
+
+
+    // please inline
+    private final double sinc(double x) {
+        if(x == 0) {
+            return 1;
+        } else return sin(PI*x)/(PI*x);
     }
 
     public void write(int val) {
@@ -53,9 +117,9 @@ public class CircularBuffer {
     }
 
     public void writeFilter(int val) {
-        double fval = filter(val);
-        data[writePtr++ & MASK] = fval;
+        data[writePtr++ & MASK] = val;
         data[writePtr++ & MASK] = 0d;
+        data[writePtr-2] = lsqFilter();
     }
 
     public void setDominantFreq() {
@@ -76,31 +140,6 @@ public class CircularBuffer {
 
         int OBS = 32-LOGN;
         domIndex = idx << OBS >> OBS;
-    }
-
-    /**
-     * Called after fft() and before respective write() call.
-     *
-     * @param newVal the new signal value.
-     * @return the filtered value.
-     */
-    private double filter(int newVal) {
-        // perform the dft on the new values
-        for(int i = 0; i<N; ++i) {
-            int pos = i << 1;
-            freqs[pos] += newVal - data[writePtr & MASK];
-            double temp = freqs[pos];
-            freqs[pos] = cpxCache[pos]*freqs[pos]-cpxCache[pos+1]*freqs[pos+1];
-            freqs[pos+1] = cpxCache[pos+1]*temp+cpxCache[pos]*freqs[pos+1];
-        }
-
-        double real = 0;
-        for(int i = domIndex+1; i<N; ++i) {
-            int pos = i << 1;
-            real += cpxCache[pos]*freqs[pos+1]-cpxCache[pos+1]*freqs[pos];
-        }
-        System.out.printf("%d->%.3f%n", newVal, real/N);
-        return real/N;
     }
 
     private void fft(int start, int lvl) {
@@ -127,6 +166,38 @@ public class CircularBuffer {
             writePlusMinus(trigCache[pos], trigCache[1+pos],
                     (k+AGGBS) << 1, (k+REVBS) << 1);
         }
+    }
+
+    public void buildKernel() {
+        final int M = kernel.length >>> 1;
+        final int K = 1000; // weight on stopband
+        final double freqPass = domIndex*PI/(N >>> 1);
+        /* this val for freqStop is really bad, i'll fix it
+           right now just 0.5 more or the nyquist-0.1*/
+        final double freqStop = min(0.5+freqPass,PI-0.1);
+
+        final double[] row = new double[N-1];
+        row[0] = freqPass+K*(1-freqStop);
+        for(int i = 1; i<N-1; ++i) {
+            row[i] = freqPass*sinc(freqPass*i)-K*freqStop*sinc(freqStop*i);
+        }
+
+        final double[] coeffs = new double[M+1];
+        for(int i = 0; i<coeffs.length; ++i) {
+            coeffs[i] = freqPass*sinc(freqPass*i);
+        }
+
+        naiveSolve(buildAvgMatrix(row), coeffs);
+
+        int ctr = 0;
+        for(int i = M; i>0; --i) {
+            kernel[ctr++] = -coeffs[i]/2;
+        }
+        kernel[ctr++] = -coeffs[0];
+        for(int i = 1; i<M+1; ++i) {
+            kernel[ctr++] = -coeffs[i]/2;
+        }
+        kernel[0] += 1;
     }
 
     // inline this hopefully?

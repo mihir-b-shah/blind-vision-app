@@ -15,7 +15,6 @@ public class DataStream {
 
     private static final double RSQRT_2 = 1/sqrt(2);
     private static final double EPSILON = 1e-5;
-    private static final double SAMPLING_FREQ = 0.1;
 
     private final IntStack stack;
     private final ByteBuffer queue;
@@ -213,6 +212,7 @@ public class DataStream {
 
     private void noiseDone() {
         buffer.setDominantFreq();
+        buffer.buildKernel();
         noiseMean /= noiseCount-1;
         noiseMeanSQ /= noiseCount-1;
         noiseSD = sqrt(noiseMeanSQ-noiseMean*noiseMean);

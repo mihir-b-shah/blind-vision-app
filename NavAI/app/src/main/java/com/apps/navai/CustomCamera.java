@@ -52,8 +52,6 @@ public class CustomCamera extends AppCompatActivity {
     private SurfaceHolder surfaceHolder;
     private String mCurrentPhotoPath;
     private float a0;
-    private int state;
-    private Semaphore openCloseLock;
 
     private static final int WAIT_LOCK = 1;
 
@@ -244,7 +242,6 @@ public class CustomCamera extends AppCompatActivity {
             System.err.println(e.getMessage());
         }
 
-        openCloseLock = new Semaphore(WAIT_LOCK);
         a0 = getIntent().getFloatExtra("initDir",0);
         cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         backThread = new HandlerThread("CameraBackground");
