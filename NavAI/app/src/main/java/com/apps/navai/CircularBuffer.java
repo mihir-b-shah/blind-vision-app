@@ -47,7 +47,7 @@ public class CircularBuffer implements Iterable {
 
     private static void naiveSolve(double[] mat, double[] res) {
         final int SIZE = res.length;
-        outer: for(int i = 0; i<SIZE; ++i) {
+        for(int i = 0; i<SIZE; ++i) {
             for(int j = 0; j<i; ++j) {
                 int pos = i-1;
                 if(abs(mat[SIZE*i+j]) > EPS) {
@@ -134,16 +134,27 @@ public class CircularBuffer implements Iterable {
         };
     }
 
-    public void setDominantFreq() {
+    /**
+     * Find the low ambient frequency in the data.
+     *
+     * @return if a candidate for filtering
+     */
+    public boolean setDominantFreq() {
         fft(0, 0);
         int IBS;
+
+        double sum = 0;
+        double wtSum = 0;
+
         final int LEN = 1+(N >>> 1);
         int idx = 1;
         double max = pow(freqs[2],2)+pow(freqs[3],2);
+        wtSum += max; sum += max;
 
         for(int i = 2; i<LEN; ++i) {
             IBS = i<<1;
             double curr = pow(freqs[IBS],2) + pow(freqs[IBS+1],2);
+            wtSum += curr; sum += curr*i;
             if(curr > max) {
                 max = curr;
                 idx = i;
@@ -152,6 +163,7 @@ public class CircularBuffer implements Iterable {
 
         int OBS = 32-LOGN;
         domIndex = idx << OBS >> OBS;
+        return sum/wtSum < 0.1;  // very conservative
     }
 
     private void fft(int start, int lvl) {

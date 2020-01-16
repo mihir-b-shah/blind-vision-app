@@ -10,6 +10,7 @@ public class DataStream {
     private double noiseSD;
     private int noiseCount;
     private boolean real;
+    private boolean filter;
 
     private final SpeedListener listener;
 
@@ -211,8 +212,10 @@ public class DataStream {
     }
 
     private void noiseDone() {
-        buffer.setDominantFreq();
-        buffer.buildKernel();
+        filter = buffer.setDominantFreq();
+        if(filter) {
+            buffer.buildKernel();
+        }
         noiseMean /= noiseCount-1;
         noiseMeanSQ /= noiseCount-1;
         noiseSD = sqrt(noiseMeanSQ-noiseMean*noiseMean);
@@ -230,7 +233,9 @@ public class DataStream {
         if((stack.size() != stack.capacity())) {
             return;
         } else {
-            stack.set(4, buffer.lsqFilter());
+            if(filter) {
+                stack.set(4, buffer.lsqFilter());
+            }
             if(!(noise = stack.isNoise()) && stack.corner()) {
                 stack.move(2, 0);
                 stack.move(4, 2);
