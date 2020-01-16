@@ -2,11 +2,12 @@ package com.apps.navai;
 
 import static java.lang.Math.*;
 import java.nio.BufferOverflowException;
+import java.util.PrimitiveIterator;
 
 /* Currently since I'm using the naive matrix solve,
 64 or 128 is the max value that can be used with filtering for this buffer. */
 
-public class CircularBuffer {
+public class CircularBuffer implements Iterable {
     private static final int MAX_SIZE = 0x8000;
     private static final double EPS = 1e-7;
 
@@ -80,12 +81,13 @@ public class CircularBuffer {
         }
     }
 
-    private double lsqFilter() {
-        final int LIM = N >>> 1;
+    // remember the value AT writeptr is the oldest one.
+    // remember the newest one is at writeptr-2
+    public double lsqFilter() {
         double sum = 0;
-        final int START = writePtr-1;
-        for(int i = 0; i<LIM; ++i) {
-            sum += data[START-(i >> 1) & MASK]*kernel[i];
+        final int START = writePtr-6;
+        for(int i = 0; i<kernel.length; ++i) {
+            sum += data[START-(i << 1) & MASK]*kernel[i];
         }
         return sum;
     }
@@ -111,15 +113,25 @@ public class CircularBuffer {
         } else return sin(PI*x)/(PI*x);
     }
 
-    public void write(int val) {
+    public void write(double val) {
         data[writePtr++ & MASK] = val;
         data[writePtr++ & MASK] = 0d;
     }
 
-    public void writeFilter(int val) {
-        data[writePtr++ & MASK] = val;
-        data[writePtr++ & MASK] = 0d;
-        data[writePtr-2] = lsqFilter();
+    @Override
+    public PrimitiveIterator.OfDouble iterator() {
+        return new PrimitiveIterator.OfDouble() {
+            int ctr = writePtr;
+            @Override
+            public double nextDouble() {
+                return data[(writePtr+=2) & MASK];
+            }
+
+            @Override
+            public boolean hasNext() {
+                return ctr == writePtr;
+            }
+        };
     }
 
     public void setDominantFreq() {
@@ -171,10 +183,13 @@ public class CircularBuffer {
     public void buildKernel() {
         final int M = kernel.length >>> 1;
         final int K = 1000; // weight on stopband
-        final double freqPass = domIndex*PI/(N >>> 1);
+        final double freqPass = (double) domIndex/(N >> 1);
         /* this val for freqStop is really bad, i'll fix it
-           right now just 0.5 more or the nyquist-0.1*/
-        final double freqStop = min(0.5+freqPass,PI-0.1);
+           right now just 0.2 more or the nyquist-0.05
+           hopefully this doesn't eliminate any part of the signal
+           should be guided by some statistical distribution
+           obtained by multiple FFT calls */
+        final double freqStop = min(freqPass+0.25,0.45);
 
         final double[] row = new double[N-1];
         row[0] = freqPass+K*(1-freqStop);
@@ -207,6 +222,21 @@ public class CircularBuffer {
         bits = (bits & 0x0F0F) << 4 | (bits & 0xF0F0) >>> 4;
         bits = (bits & 0x00FF) << 8 | (bits & 0xFF00) >>> 8;
         return bits >>> 16-len;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+
+        for(int i = 0; i<(N << 1); i+=2) {
+            sb.append(data[writePtr + i & MASK]); sb.append(' ');
+            sb.append(','); sb.append(' ');
+        }
+
+        sb.deleteCharAt(sb.length()-1); sb.deleteCharAt(sb.length()-1);
+        sb.append(']');
+        return sb.toString();
     }
 
     /**

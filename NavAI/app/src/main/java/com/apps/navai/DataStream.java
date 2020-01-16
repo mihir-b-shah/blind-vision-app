@@ -16,19 +16,19 @@ public class DataStream {
     private static final double RSQRT_2 = 1/sqrt(2);
     private static final double EPSILON = 1e-5;
 
-    private final IntStack stack;
+    private final DblStack stack;
     private final ByteBuffer queue;
     private final CircularBuffer buffer;
 
-    private class IntStack {
-        private final int[] stack;
+    private class DblStack {
+        private final double[] stack;
         private int pos;
 
-        public IntStack(int capacity) {
-            stack = new int[capacity];
+        public DblStack(int capacity) {
+            stack = new double[capacity];
         }
 
-        public void push(int val) {
+        public void push(double val) {
             stack[pos++] = val;
         }
 
@@ -36,11 +36,11 @@ public class DataStream {
             --pos;
         }
 
-        public int top() {
+        public double top() {
             return stack[pos-1];
         }
 
-        public int extract() {
+        public double extract() {
             return stack[--pos];
         }
 
@@ -54,11 +54,11 @@ public class DataStream {
             pos = 0;
         }
 
-        public int at(int i) {
+        public double at(int i) {
             return stack[i];
         }
 
-        public void set(int idx, int val) {stack[idx] = val;}
+        public void set(int idx, double val) {stack[idx] = val;}
 
         public void move(int src, int dest) {
             stack[dest] = stack[src];
@@ -69,7 +69,7 @@ public class DataStream {
         }
 
         public boolean corner() {
-            if(stack[2] == -1) {
+            if(abs(stack[2]+1)<EPSILON) {
                 return false;
             } else return signum(stack[4]-stack[2]) == -signum(stack[2]-stack[0]);
         }
@@ -92,7 +92,7 @@ public class DataStream {
     public DataStream(double thr, SpeedListener listener) {
         threshold = thr;
         this.listener = listener;
-        stack = new IntStack(5);
+        stack = new DblStack(5);
         stack.push(0); stack.push(-1);
         queue = new ByteBuffer(3);
         buffer = new CircularBuffer(64);
@@ -198,7 +198,7 @@ public class DataStream {
     private void pushTrain() {
         if((stack.size()&1) == 0) {
             buffer.write(stack.top());
-            int val = abs(stack.top()-
+            double val = abs(stack.top()-
                     (stack.at(1)==-1 ? stack.top() : stack.at(1)));
             stack.move(3, 1);
             stack.move(2, 0);
@@ -218,7 +218,7 @@ public class DataStream {
         noiseSD = sqrt(noiseMeanSQ-noiseMean*noiseMean);
         threshold = genThreshold();
         threshold *= noiseSD;
-        int temp = stack.at(1);
+        double temp = stack.at(1);
         stack.move(0, 1);
         stack.set(0, temp);
         stack.set(2, -1); // set up for {mean, time, mean}
@@ -229,22 +229,25 @@ public class DataStream {
         boolean noise;
         if((stack.size() != stack.capacity())) {
             return;
-        } else if(!(noise = stack.isNoise()) && stack.corner()) {
-            stack.move(2, 0);
-            stack.move(4, 2);
-            listener.speedChanged(PI, (stack.at(3)-stack.at(1))/1000d);
-            stack.move(3, 1);
-        } else if(!noise) {
-            stack.move(4, 2);
+        } else {
+            stack.set(4, buffer.lsqFilter());
+            if(!(noise = stack.isNoise()) && stack.corner()) {
+                stack.move(2, 0);
+                stack.move(4, 2);
+                listener.speedChanged(PI, (stack.at(3)-stack.at(1))/1000d);
+                stack.move(3, 1);
+            } else if(!noise) {
+                stack.move(4, 2);
+            }
         }
 
-        buffer.writeFilter(stack.top());
+        buffer.write(stack.top());
         stack.pop();
         stack.pop();
     }
 
     @FunctionalInterface
-    public interface SpeedListener {
+    interface SpeedListener {
         void speedChanged(double theta, double time);
     }
 }
