@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.CameraAccessException;
@@ -18,8 +19,10 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.media.AudioManager;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.ToneGenerator;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -54,9 +57,15 @@ public class CustomCamera extends AppCompatActivity {
     private SurfaceHolder surfaceHolder;
     private String mCurrentPhotoPath;
     private float a0;
+    private int previewCtr = 25;
 
     private boolean configured;
     private int state;
+
+    private static final int VOLUME = 85;
+    private static final int DURATION = 5000;
+    private static final int FREQ = 500;
+    private static final int BEEP_LENGTH = 100;
 
     // copied some google code
     private static final int STATE_PREVIEW = 0;
@@ -107,7 +116,6 @@ public class CustomCamera extends AppCompatActivity {
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
-
     }
 
     private void precapture() {
@@ -154,23 +162,18 @@ public class CustomCamera extends AppCompatActivity {
                                        @NonNull CaptureRequest request,
                                        @NonNull TotalCaptureResult result) {
             CustomCamera.this.session = session;
-            /*
-            session.close();
-            cameraDevice.close();
-             */
             switch(state) {
                 case STATE_PREVIEW:
+                    --previewCtr;
+                    if(previewCtr > 0) return;
+                    state = STATE_WAITING_LOCK;
+                    builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                            CameraMetadata.CONTROL_AF_TRIGGER_START);
+                    builder.set(CaptureRequest.CONTROL_AE_MODE,
+                            CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
                     try {
-                        Thread.sleep(10);
-                        state = STATE_WAITING_LOCK;
-                        builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                                CameraMetadata.CONTROL_AF_TRIGGER_START);
-                        try {
-                            session.capture(builder.build(), captureCallback, handler);
-                        } catch (CameraAccessException e) {
-                            e.printStackTrace();
-                        }
-                    } catch (InterruptedException e) {
+                        session.capture(builder.build(), captureCallback, handler);
+                    } catch (CameraAccessException e) {
                         e.printStackTrace();
                     }
                     break;
@@ -213,6 +216,17 @@ public class CustomCamera extends AppCompatActivity {
         }
     };
 
+    private void unlockFocus() throws CameraAccessException {
+        builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+        builder.removeTarget(surfaceHolder.getSurface());
+        builder.removeTarget(imageReader.getSurface());
+        session.stopRepeating();
+        session.abortCaptures();
+        session.close();
+        cameraDevice.close();
+    }
+
     private CameraDevice.StateCallback deviceCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice camera) {
@@ -238,7 +252,7 @@ public class CustomCamera extends AppCompatActivity {
 
                 @Override
                 public void surfaceDestroyed(SurfaceHolder holder) {
-                    //holder.getSurface().release();
+                    holder.getSurface().release();
                 }
             });
         }
@@ -328,15 +342,39 @@ public class CustomCamera extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_custom_camera);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         try {
             file = createImageFile();
         } catch (IOException e) {
             System.err.println(e.getMessage());
         }
+
+        final ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_SYSTEM, VOLUME);
+        Thread beep = new Thread(){
+            final int DIFF = FREQ-BEEP_LENGTH;
+            @Override
+            public void run() {
+                for(int time = 0; time<DURATION; time+=FREQ){
+                    tg.stopTone();
+                    tg.startTone(ToneGenerator.TONE_CDMA_ONE_MIN_BEEP, BEEP_LENGTH);
+                    try {
+                        sleep(DIFF);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+        beep.start();
+        try {
+            beep.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        tg.release();
 
         a0 = getIntent().getFloatExtra("initDir",0);
         cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
@@ -370,13 +408,13 @@ public class CustomCamera extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         backThread.quitSafely();
-        //imageReader.close();
         handler = null;
         try {
             backThread.join();
         } catch (InterruptedException e) {
             System.err.println(e.getMessage());
         }
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
     }
 
     private void openCamera() {
@@ -386,8 +424,13 @@ public class CustomCamera extends AppCompatActivity {
             imageReader.setOnImageAvailableListener(reader -> {
                 if(state == STATE_TAKEN) {
                     Image img = reader.acquireLatestImage();
-                    if(img == null || img.getHeight() == 0 || img.getWidth() == 0) return;
-                    (new ImageSaver(img, file)).run();
+                    if(img == null) return;
+                    try {
+                        unlockFocus();
+                        (new ImageSaver(img, file)).run();
+                    } catch (CameraAccessException e) {
+                        e.printStackTrace();
+                    }
                 }
             }, handler);
             cameraManager.openCamera(getRearCameraId(), deviceCallback, handler);

@@ -132,20 +132,11 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
-        // below this change for testing
-        /*
-        Intent start = new Intent(getApplicationContext(), ArduinoSensor.class);
-        startActivityForResult(start, 10);
-        */
-/*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        if(first) startService(start); */
-
-        Intent start = new Intent(getApplicationContext(), CustomCamera.class);
-        startActivityForResult(start, 13);
+        if(first) startService(start);
     }
 
     @Override
