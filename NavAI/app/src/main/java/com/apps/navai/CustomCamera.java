@@ -16,6 +16,7 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
@@ -37,7 +38,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.Semaphore;
 
 import static com.apps.navai.MainActivity.FLOAT_1;
 import static com.apps.navai.MainActivity.INT_1;
@@ -52,8 +52,12 @@ public class CustomCamera extends AppCompatActivity {
     private SurfaceHolder surfaceHolder;
     private String mCurrentPhotoPath;
     private float a0;
+    private int state = STATE_WAITING_LOCK;
+    private int statePrior = STATE_WAITING_LOCK;
 
-    private static final int WAIT_LOCK = 1;
+    private static final int STATE_WAITING_LOCK = 1;
+    private static final int STATE_LOCKED = 2;
+    private static final int STATE_DONE = 3;
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -85,16 +89,15 @@ public class CustomCamera extends AppCompatActivity {
                     // make call to camera
                     try {
                         CaptureRequest.Builder builder =
-                                cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-                        builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                                CameraMetadata.CONTROL_AF_TRIGGER_START);
+                                cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
                         builder.addTarget(surfaceHolder.getSurface());
                         builder.addTarget(imageReader.getSurface());
-                        builder.set(CaptureRequest.NOISE_REDUCTION_MODE,
-                                CameraMetadata.NOISE_REDUCTION_MODE_FAST);
+                        float[] focs = cameraManager.getCameraCharacteristics(getRearCameraId())
+                                .get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
+                        float focLength = focs[focs.length-1];
+                        builder.set(CaptureRequest.LENS_FOCAL_LENGTH, focLength);
                         CaptureRequest request = builder.build();
-                        session.setRepeatingRequest(builder.build(), null, null);
-                        session.capture(request, captureCallback, handler);
+                        session.setRepeatingRequest(request, captureCallback, null);
                     } catch (CameraAccessException e) {
                         System.err.println(e.getMessage());
                     }
@@ -108,14 +111,53 @@ public class CustomCamera extends AppCompatActivity {
 
     private CameraCaptureSession.CaptureCallback captureCallback =
             new CameraCaptureSession.CaptureCallback() {
-                @Override
-                public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                                               @NonNull CaptureRequest request,
-                                               @NonNull TotalCaptureResult result) {
-                    //session.close();
-                    //cameraDevice.close();
+
+        @Override
+        public void onCaptureCompleted(@NonNull CameraCaptureSession session,
+                                       @NonNull CaptureRequest request,
+                                       @NonNull TotalCaptureResult result) {
+            if(statePrior == STATE_LOCKED) {
+                state = STATE_DONE;
+                session.close();
+                cameraDevice.close();
+                return;
+            }
+            if(ready) {
+                try {
+                    System.out.println("STATE LOCKED!");
+                    session.stopRepeating();
+                    CaptureRequest.Builder builder =
+                            cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                    builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                            CameraMetadata.CONTROL_AF_TRIGGER_START);
+                    builder.addTarget(surfaceHolder.getSurface());
+                    builder.addTarget(imageReader.getSurface());
+                    builder.set(CaptureRequest.NOISE_REDUCTION_MODE,
+                            CameraMetadata.NOISE_REDUCTION_MODE_FAST);
+                    CaptureRequest req = builder.build();
+                    builder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
+                    session.capture(req, captureCallback, handler);
+                } catch (CameraAccessException e) {
+                    e.printStackTrace();
                 }
-            };
+            }
+            int focusState = result.get(CaptureResult.CONTROL_AF_STATE);
+            switch(focusState) {
+                case CaptureResult.CONTROL_AF_TRIGGER_START:
+                    ready = true;
+                    break;
+                case CaptureResult.CONTROL_AF_STATE_PASSIVE_FOCUSED:
+                case CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED:
+                    statePrior = state;
+                    state = STATE_LOCKED;
+                    break;
+                default:
+                    statePrior = state;
+                    state = STATE_WAITING_LOCK;
+                    break;
+            }
+        }
+    };
 
     private CameraDevice.StateCallback deviceCallback = new CameraDevice.StateCallback() {
         @Override
@@ -160,6 +202,7 @@ public class CustomCamera extends AppCompatActivity {
             finish();
         }
     };
+    private boolean ready;
 
     @SuppressWarnings("ConstantConditions")
     private String getRearCameraId() {
@@ -288,9 +331,12 @@ public class CustomCamera extends AppCompatActivity {
             imageReader = ImageReader.newInstance(
                     1920, 1080, ImageFormat.JPEG, 2);
             imageReader.setOnImageAvailableListener(reader -> {
-                Image img = reader.acquireLatestImage();
-                if(img == null || img.getHeight() == 0 || img.getWidth() == 0) return;
-                (new ImageSaver(img, file)).run();
+                System.out.println("HELLO!");
+                if(ready) {
+                    Image img = reader.acquireLatestImage();
+                    if(img == null || img.getHeight() == 0 || img.getWidth() == 0) return;
+                    (new ImageSaver(img, file)).run();
+                }
             }, handler);
             cameraManager.openCamera(getRearCameraId(), deviceCallback, handler);
         } catch (CameraAccessException|SecurityException e) {
