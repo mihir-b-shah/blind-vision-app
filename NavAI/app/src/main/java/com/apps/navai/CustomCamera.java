@@ -49,15 +49,21 @@ public class CustomCamera extends AppCompatActivity {
     private ImageReader imageReader;
     private CameraManager cameraManager;
     private CameraDevice cameraDevice;
+    private CaptureRequest.Builder builder;
+    private CameraCaptureSession session;
     private SurfaceHolder surfaceHolder;
     private String mCurrentPhotoPath;
     private float a0;
-    private int state = STATE_WAITING_LOCK;
-    private int statePrior = STATE_WAITING_LOCK;
 
+    private boolean configured;
+    private int state;
+
+    // copied some google code
+    private static final int STATE_PREVIEW = 0;
     private static final int STATE_WAITING_LOCK = 1;
-    private static final int STATE_LOCKED = 2;
-    private static final int STATE_DONE = 3;
+    private static final int STATE_WAITING_PRECAPTURE = 2;
+    private static final int STATE_WAITING_NON_PRECAPTURE = 3;
+    private static final int STATE_TAKEN = 4;
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -82,24 +88,55 @@ public class CustomCamera extends AppCompatActivity {
     private File file;
     private HandlerThread backThread;
 
+    private void capturePicture() {
+        try {
+            CaptureRequest.Builder localBuilder =
+                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+            localBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                    CameraMetadata.CONTROL_AF_TRIGGER_START);
+            localBuilder.addTarget(surfaceHolder.getSurface());
+            localBuilder.addTarget(imageReader.getSurface());
+            localBuilder.set(CaptureRequest.CONTROL_AF_MODE,
+                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+            CaptureRequest req = localBuilder.build();
+            localBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
+
+            session.stopRepeating();
+            session.abortCaptures();
+            session.capture(req, captureCallback, handler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void precapture() {
+        builder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
+                CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
+        state = STATE_WAITING_PRECAPTURE;
+        try {
+            session.capture(builder.build(), captureCallback, handler);
+        } catch (CameraAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
     private CameraCaptureSession.StateCallback stateCallback =
             new CameraCaptureSession.StateCallback() {
                 @Override
                 public void onConfigured(@NonNull CameraCaptureSession session) {
                     // make call to camera
-                    try {
-                        CaptureRequest.Builder builder =
-                                cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-                        builder.addTarget(surfaceHolder.getSurface());
-                        builder.addTarget(imageReader.getSurface());
-                        float[] focs = cameraManager.getCameraCharacteristics(getRearCameraId())
-                                .get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
-                        float focLength = focs[focs.length-1];
-                        builder.set(CaptureRequest.LENS_FOCAL_LENGTH, focLength);
-                        CaptureRequest request = builder.build();
-                        session.setRepeatingRequest(request, captureCallback, null);
-                    } catch (CameraAccessException e) {
-                        System.err.println(e.getMessage());
+                    if(!configured) {
+                        try {
+                            CustomCamera.this.session = session;
+                            builder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                            builder.addTarget(surfaceHolder.getSurface());
+                            CaptureRequest request = builder.build();
+                            configured = true;
+                            session.setRepeatingRequest(request, captureCallback, null);
+                        } catch (CameraAccessException e) {
+                            System.err.println(e.getMessage());
+                        }
                     }
                 }
 
@@ -116,45 +153,62 @@ public class CustomCamera extends AppCompatActivity {
         public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                        @NonNull CaptureRequest request,
                                        @NonNull TotalCaptureResult result) {
-            if(statePrior == STATE_LOCKED) {
-                state = STATE_DONE;
-                session.close();
-                cameraDevice.close();
-                return;
-            }
-            if(ready) {
-                try {
-                    System.out.println("STATE LOCKED!");
-                    session.stopRepeating();
-                    CaptureRequest.Builder builder =
-                            cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-                    builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                            CameraMetadata.CONTROL_AF_TRIGGER_START);
-                    builder.addTarget(surfaceHolder.getSurface());
-                    builder.addTarget(imageReader.getSurface());
-                    builder.set(CaptureRequest.NOISE_REDUCTION_MODE,
-                            CameraMetadata.NOISE_REDUCTION_MODE_FAST);
-                    CaptureRequest req = builder.build();
-                    builder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
-                    session.capture(req, captureCallback, handler);
-                } catch (CameraAccessException e) {
-                    e.printStackTrace();
+            CustomCamera.this.session = session;
+            /*
+            session.close();
+            cameraDevice.close();
+             */
+            switch(state) {
+                case STATE_PREVIEW:
+                    try {
+                        Thread.sleep(10);
+                        state = STATE_WAITING_LOCK;
+                        builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                                CameraMetadata.CONTROL_AF_TRIGGER_START);
+                        try {
+                            session.capture(builder.build(), captureCallback, handler);
+                        } catch (CameraAccessException e) {
+                            e.printStackTrace();
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case STATE_WAITING_LOCK:
+                    Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
+                    if(afState == null) {
+                        capturePicture();
+                    } else if (CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState ||
+                            CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED == afState) {
+                        Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+                        if (aeState == null ||
+                                aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
+                            state = STATE_TAKEN;
+                            capturePicture();
+                        } else {
+                            precapture();
+                        }
+                    }
+                    break;
+                case STATE_WAITING_PRECAPTURE: {
+                    // CONTROL_AE_STATE can be null on some devices
+                    Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+                    if (aeState == null ||
+                            aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE ||
+                            aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED) {
+                        state = STATE_WAITING_NON_PRECAPTURE;
+                    }
+                    break;
                 }
-            }
-            int focusState = result.get(CaptureResult.CONTROL_AF_STATE);
-            switch(focusState) {
-                case CaptureResult.CONTROL_AF_TRIGGER_START:
-                    ready = true;
+                case STATE_WAITING_NON_PRECAPTURE: {
+                    // CONTROL_AE_STATE can be null on some devices
+                    Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+                    if (aeState == null || aeState != CaptureResult.CONTROL_AE_STATE_PRECAPTURE) {
+                        state = STATE_TAKEN;
+                        capturePicture();
+                    }
                     break;
-                case CaptureResult.CONTROL_AF_STATE_PASSIVE_FOCUSED:
-                case CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED:
-                    statePrior = state;
-                    state = STATE_LOCKED;
-                    break;
-                default:
-                    statePrior = state;
-                    state = STATE_WAITING_LOCK;
-                    break;
+                }
             }
         }
     };
@@ -202,7 +256,6 @@ public class CustomCamera extends AppCompatActivity {
             finish();
         }
     };
-    private boolean ready;
 
     @SuppressWarnings("ConstantConditions")
     private String getRearCameraId() {
@@ -331,8 +384,7 @@ public class CustomCamera extends AppCompatActivity {
             imageReader = ImageReader.newInstance(
                     1920, 1080, ImageFormat.JPEG, 2);
             imageReader.setOnImageAvailableListener(reader -> {
-                System.out.println("HELLO!");
-                if(ready) {
+                if(state == STATE_TAKEN) {
                     Image img = reader.acquireLatestImage();
                     if(img == null || img.getHeight() == 0 || img.getWidth() == 0) return;
                     (new ImageSaver(img, file)).run();
