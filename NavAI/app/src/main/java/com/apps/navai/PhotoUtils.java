@@ -31,13 +31,20 @@ public class PhotoUtils {
         PhotoUtils.manager = manager;
     }
 
-    public static float calcDist(Calibrate.DirVector first, Calibrate.DirVector second) {
-        return 0.0f;
+    public static void freeReference() {
+        manager = null;
+    }
+    /* defines the plane correctly
+       orig's xyz vector is the normal vector
+       now we need a vector along the horizontal edge of the phone
+
+       n1 = [[1 tan(theta)],[-tan(theta), 1]]*n, where n,n1 are vectors */
+    public static Calibrate.DirVector transform(Calibrate.DirVector orig) {
+        throw new UnsupportedOperationException("To implement");
     }
 
-    public static float getVerticalAngle(Annotation annot) {
+    public static float getVerticalAngle(float vertPixels) {
         float VERTICAL_SIZE = 1080;
-        float vertPixels = annot.getRect().exactCenterY();
         if(manager == null) return Float.NaN;
         try {
             CameraCharacteristics props = manager.getCameraCharacteristics(getNormCamera());
@@ -88,5 +95,4 @@ public class PhotoUtils {
         }
         return null;
     }
-
 }

@@ -128,20 +128,25 @@ public class Calibrate extends Service implements SensorEventListener {
 
     public class DirVector implements Serializable {
         private float x,y,z;
+        private final transient float A,P,R;
 
-        public DirVector() {}
         public DirVector(float[] APR, float a0) {
-            update(APR, a0);
+            A = APR[0]; P = APR[1]; R = APR[2];
+            x = (float) (cos(APR[0]-a0)*sin(APR[2])-sin(APR[0]-a0)*sin(APR[1])*cos(APR[2]));
+            y = (float) (-sin(APR[0]-a0)*sin(APR[2])-cos(APR[0]-a0)*sin(APR[1])*cos(APR[2]));
+            z = (float) (cos(APR[1])*cos(APR[2]));
         }
 
         public float getX() {return x;}
         public float getY() {return y;}
         public float getZ() {return z;}
 
-        public void update(float[] APR, float a0) {
-            x = (float) (cos(APR[0]-a0)*sin(APR[2])-sin(APR[0]-a0)*sin(APR[1])*cos(APR[2]));
-            y = (float) (-sin(APR[0]-a0)*sin(APR[2])-cos(APR[0]-a0)*sin(APR[1])*cos(APR[2]));
-            z = (float) (cos(APR[1])*cos(APR[2]));
+        public float getAzimuth() {return A;}
+        public float getPitch() {return P;}
+        public float getRoll() {return R;}
+
+        public DirVector update(float[] APR, float a0) {
+            return new DirVector(APR, a0);
         }
 
         private void writeObject(ObjectOutputStream oos) throws IOException {
