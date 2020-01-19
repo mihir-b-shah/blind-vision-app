@@ -52,20 +52,27 @@ public class Converge extends IntentService {
     }
 
     public void converge() {
-        final int size = session.size();
+        int size = session.sizeOne();
         String[] buffer = new String[size+1];
         buffer[0] = keyword;
         for(int i = 0; i<size; ++i) {
-            buffer[i+1] = session.getAnnotation(i).getDescription();
+            buffer[i+1] = session.getAnnotationFirst(i).getDescription();
         }
         float[] scores = genScores(buffer);
-        convergeScores(scores);
+        Annotation[] a1 = convergeScores(0, scores);
+        for(int i = 0; i<size; ++i) {
+            buffer[i+1] = session.getAnnotationSecond(i).getDescription();
+        }
+        scores = genScores(buffer);
+        Annotation[] a2 = convergeScores(1, scores);
+        done(a1, a2);
     }
 
-    private void convergeScores(float[] f) {
+    private Annotation[] convergeScores(int id, float[] f) {
         PriorityQueue<Pair> pq = new PriorityQueue<>();
         for(int i = 0; i<f.length; ++i) {
-            pq.offer(new Pair(session.getAnnotation(i), f[i]));
+            pq.offer(new Pair(id == 0 ? session.getAnnotationFirst(i) :
+                    session.getAnnotationSecond(i), f[i]));
         }
         Annotation[] result = new Annotation[NUM_ANNOT];
         if(NUM_ANNOT > pq.size()) {
@@ -78,14 +85,19 @@ public class Converge extends IntentService {
                 a.setMatch(f[i]);
                 result[i] = a;
             }
-            Intent out = new Intent(MainActivity.SERVICE_RESPONSE);
-            session.setAnnotation(result);
-            out.putExtra("session", session);
-            out.putExtra(INT_1, id);
-            LocalBroadcastManager.getInstance(getApplicationContext())
-                    .sendBroadcast(out);
-            Converge.this.stopSelf();
         }
+        return result;
+    }
+
+    private void done(Annotation[] a1, Annotation[] a2) {
+        Intent out = new Intent(MainActivity.SERVICE_RESPONSE);
+        session.setAnnotationsOne(a1);
+        session.setAnnotationsTwo(a2);
+        out.putExtra("session", session);
+        out.putExtra(INT_1, id);
+        LocalBroadcastManager.getInstance(getApplicationContext())
+                .sendBroadcast(out);
+        Converge.this.stopSelf();
     }
 
     private float[] genScores(String[] buffer) {

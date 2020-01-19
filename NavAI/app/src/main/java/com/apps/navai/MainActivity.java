@@ -39,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Session session;
+    private Session session2;
     private float initDir;
     private String spkText;
     private String mCurrentPhotoPath;
@@ -73,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
                         startActivityForResult(next, 4);
                         break;
                     case 6:
+                        session = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), CallAPI.class);
                         next.putExtra(STRING_1, photoPath2);
                         next.putExtra(STRING_2, "READFILE_TWO");
@@ -80,27 +82,16 @@ public class MainActivity extends AppCompatActivity {
                         next.putExtra(INT_1, 7);
                         startService(next);
                     case 7:
-                        session = (Session) intent.getSerializableExtra("session");
+                        session2 = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), Converge.class);
-                        next.putExtra(STRING_2, session);
+                        next.putExtra(STRING_2, Session.combine(session, session2));
                         next.putExtra(STRING_1, spkText);
                         next.putExtra(INT_1, 8);
                         startService(next);
                         break;
                     case 8:
                         session = (Session) intent.getSerializableExtra("session");
-                        Annotation annot = session.getAnnotation(0);
-                        boolean right;
-                        if(annot.getRect() != null)
-                            right = annot.getRect().centerX() > session.getImageWidth() >> 1;
-                        else
-                            right = false;
-                        next = new Intent(getApplicationContext(), Speak.class);
-                        next.putExtra(STRING_1, "The object found is to your " +
-                                (right ? "right" : "left"));
-                        next.putExtra(INT_1, 9);
-                        startService(next);
-                        break;
+                        // DONE
                     default:
                         System.err.println("Error code: " + code);
                         System.err.println("Process id not recognized.");

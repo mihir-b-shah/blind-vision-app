@@ -7,11 +7,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.os.Environment;
 
-import androidx.annotation.NonNull;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
@@ -32,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.apps.navai.MainActivity.INT_1;
+import static com.apps.navai.MainActivity.INT_2;
 import static com.apps.navai.MainActivity.STRING_1;
 import static com.apps.navai.MainActivity.STRING_2;
 import static com.apps.navai.MainActivity.STRING_3;
@@ -43,11 +41,14 @@ public class CallAPI extends IntentService {
     private int id;
     private String readfile;
     private String imagepath;
-    private String writefile;
-    private static Bitmap photoMap;
+    private int callNum;
 
-    private int imageWidth;
-    private int imageHeight;
+    private String writefile;
+    private static final List<Bitmap> photoMap;
+
+    static {
+        photoMap = new ArrayList<>(2);
+    }
 
     public CallAPI() {
         super("CallAPI");
@@ -56,6 +57,7 @@ public class CallAPI extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         id = intent.getIntExtra(INT_1, -1);
+        callNum = intent.getIntExtra(INT_2, -1);
         imagepath = intent.getStringExtra(STRING_1);
         writefile = intent.getStringExtra(STRING_2);
         readfile = intent.getStringExtra(STRING_3);
@@ -82,7 +84,12 @@ public class CallAPI extends IntentService {
 
         Annotation[] out = new Annotation[newAnnotations.size()];
         out = newAnnotations.toArray(out);
-        session = new Session(out, imagepath, imageWidth, imageHeight);
+        if(callNum == 1) {
+            session = new Session(null, out, null, imagepath);
+        } else {
+            session = new Session(out, null, imagepath, null);
+        }
+
     }
 
     private String createFile(String prefix) {
@@ -101,27 +108,23 @@ public class CallAPI extends IntentService {
         return null;
     }
 
-    public static Bitmap getBitmap() {
-        return photoMap;
+    public static Bitmap getFirstBitmap() {
+        return photoMap.get(0);
+    }
+
+    public static Bitmap getSecondBitmap() {
+        return photoMap.get(1);
     }
 
     private void objectRecognize() {
         /* params[0] = absolute path of the photo */
         BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
-        bitmapOptions.inJustDecodeBounds = true;
-        bitmapOptions.inMutable = false;
-        Bitmap bitmap = BitmapFactory.decodeFile(imagepath, bitmapOptions);
         bitmapOptions.inJustDecodeBounds = false;
-        int area = bitmapOptions.outWidth*bitmapOptions.outHeight;
-        System.out.printf("Width orig: %d, Height orig: %d%n", bitmapOptions.outWidth, bitmapOptions.outHeight);
-        if(area>2_500_000) {
-            bitmapOptions.inSampleSize = (int) Math.ceil(Math.sqrt(area/2_500_000));
-        }
-        bitmap = BitmapFactory.decodeFile(imagepath, bitmapOptions);
-        photoMap = bitmap;
-        imageWidth = bitmap.getWidth();
-        imageHeight = bitmap.getHeight();
-        System.out.printf("Width: %d, Height: %d%n", imageWidth, imageHeight);
+        bitmapOptions.inMutable = false;
+        bitmapOptions.outWidth = CustomCamera.CAMERA_WIDTH;
+        bitmapOptions.outHeight = CustomCamera.CAMERA_HEIGHT;
+        Bitmap bitmap = BitmapFactory.decodeFile(imagepath, bitmapOptions);
+        photoMap.add(bitmap);
 
         FirebaseVisionObjectDetectorOptions options =
                 new FirebaseVisionObjectDetectorOptions.Builder()
@@ -135,20 +138,12 @@ public class CallAPI extends IntentService {
         final FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
         objectDetector.processImage(image)
             .addOnSuccessListener(
-                new OnSuccessListener<List<FirebaseVisionObject>>() {
-                    @Override
-                    public void onSuccess(List<FirebaseVisionObject> detectedObjects) {
+                    detectedObjects -> {
                         recObjects = detectedObjects;
                         textRecognize(image);
-                    }
-                })
+                    })
             .addOnFailureListener(
-                new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        System.err.printf("Error encountered in send.");
-                    }
-                });
+                    e -> System.err.printf("Error encountered in send."));
     }
 
     private void textRecognize(FirebaseVisionImage image) {
@@ -157,37 +152,34 @@ public class CallAPI extends IntentService {
 
         Task<FirebaseVisionText> result =
             detector.processImage(image)
-                .addOnSuccessListener(new OnSuccessListener<FirebaseVisionText>() {
-                    @Override
-                    public void onSuccess(FirebaseVisionText firebaseVisionText) {
-                    recText = firebaseVisionText;
-                    System.out.println(recText.getText());
-                    convert();
-                    session.genDescriptions();
+                .addOnSuccessListener(firebaseVisionText -> {
+                recText = firebaseVisionText;
+                System.out.println(recText.getText());
+                convert();
+                session.genDescriptions(0);
+                session.genDescriptions(1);
 
-                    if(writefile != null) {
-                        dump(createFile(writefile));
-                    } else {
-                        Intent out = new Intent(MainActivity.SERVICE_RESPONSE);
-                        out.putExtra(INT_1, id);
-                        out.putExtra("session", session);
-                        LocalBroadcastManager.getInstance(getApplicationContext())
-                                .sendBroadcast(out);
-                        CallAPI.this.stopSelf();
-                    }
-                    }
+                if(writefile != null) {
+                    dump(createFile(writefile));
+                } else {
+                    Intent out = new Intent(MainActivity.SERVICE_RESPONSE);
+                    out.putExtra(INT_1, id);
+                    out.putExtra("session", session);
+                    LocalBroadcastManager.getInstance(getApplicationContext())
+                            .sendBroadcast(out);
+                    CallAPI.this.stopSelf();
+                }
                 })
                 .addOnFailureListener(
-                    new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                        System.err.println("Error encountered in send.");
-                        }
-                    });
+                        e -> System.err.println("Error encountered in send."));
     }
 
     public void dump(String path) {
-        session.setSourceFile(path);
+        if(callNum == 0) {
+            session.setSourceFileOne(path);
+        } else {
+            session.setSourceFileTwo(path);
+        }
         try {
             BufferedWriter bw = new BufferedWriter(new FileWriter(path));
             CharBuffer buf = session.outform();
@@ -217,7 +209,8 @@ public class CallAPI extends IntentService {
         String index = null;
 
         for (int i = 0; i < list.length; ++i) {
-            if (list[i].getName().contains(readfile) && list[i].lastModified() > latest) {
+            if (list[i].getName().contains(readfile+(callNum == 0 ?"" : "2"))
+                    && list[i].lastModified() > latest) {
                 index = list[i].getAbsolutePath();
                 latest = list[i].lastModified();
             }
@@ -235,8 +228,6 @@ public class CallAPI extends IntentService {
             BufferedReader br = new BufferedReader(new FileReader(getPath()));
 
             imagepath = br.readLine();
-            imageWidth = Integer.parseInt(br.readLine());
-            imageHeight = Integer.parseInt(br.readLine());
             int next = Integer.parseInt(br.readLine());
             Annotation[] out = new Annotation[next];
 
@@ -258,7 +249,12 @@ public class CallAPI extends IntentService {
                 out[i] = new Annotation(t.charAt(0), d, c, rect);
             }
             br.close();
-            session = new Session(out, imagepath, readfile, imageWidth, imageHeight);
+            Session session;
+            if(callNum == 0) {
+                session = new Session(out, null, imagepath, null, readfile, null);
+            } else {
+                session = new Session(null, out, null, imagepath, null, readfile);
+            }
 
             Intent intent = new Intent();
             intent.putExtra(INT_1, 3);

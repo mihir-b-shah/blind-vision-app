@@ -8,34 +8,56 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Arrays;
 
 public class Session implements java.io.Serializable {
-    private Annotation[] annotations;
-    private String filePath;
-    private String srcFile;
+    private Annotation[] annotationsOne;
+    private Annotation[] annotationsTwo;
+
+    private String filePathOne;
+    private String filePathTwo;
+
+    private String srcFileOne;
+    private String srcFileTwo;
 
     private final transient String nullstr = "NULL7019";
-    private int imageWidth;
-    private int imageHeight;
 
-    public Session(Annotation[] a, String fp, String src, int width, int height) {
-        this(a,fp,width,height);
-        srcFile = src;
+    public Session(Annotation[] a1, Annotation[] a2, String fp1, String fp2,
+                   String src1, String src2) {
+        this(a1,a2,fp1,fp2);
+        srcFileOne = src1;
+        srcFileTwo = src2;
     }
 
-    public Session(Annotation[] a, String fp, int width, int height) {
-        annotations = a;
-        filePath = fp;
-        imageWidth = width;
-        imageHeight = height;
+    public Session(Annotation[] a1, Annotation[] a2, String fp1, String fp2) {
+        annotationsOne = a1;
+        annotationsTwo = a2;
+        filePathOne = fp1;
+        filePathTwo = fp2;
     }
 
-    // why dont they have streams?
-    public void genDescriptions() {
+    /**
+     * Generate a complete session object.
+     *
+     * @param s1 a half-session, with other args null
+     * @param s2 the other half or args null
+     * @return the full session object.
+     */
+    public static Session combine(Session s1, Session s2) {
+        if(s1.annotationsOne != null && s2.annotationsTwo != null) {
+            return new Session(s1.annotationsOne, s2.annotationsTwo, s1.filePathOne,
+                    s2.filePathTwo, s1.srcFileOne, s2.srcFileTwo);
+        } else if(s1.annotationsTwo != null && s2.annotationsOne == null){
+            return new Session(s2.annotationsOne, s1.annotationsTwo, s2.filePathOne,
+                    s1.filePathTwo, s1.srcFileTwo, s2.srcFileOne);
+        }
+        return null;
+    }
+
+    public void genDescriptions(int index) {
         System.out.println("Got to descriptions!");
-        final Bitmap bitmap = CallAPI.getBitmap();
+        final Bitmap bitmap = index == 0 ? CallAPI.getFirstBitmap() : CallAPI.getSecondBitmap();
         int iter = 0;
+        final Annotation[] annotations = index == 0 ? annotationsOne : annotationsTwo;
         while(iter < annotations.length && annotations[iter].getRTag()==Annotation.OBJECT_TAG) {
             System.out.println("Iter counter " + iter);
             final Rect rect = annotations[iter].getRect();
@@ -52,84 +74,100 @@ public class Session implements java.io.Serializable {
         System.out.println("Recycled bitmaps!");
     }
 
-    public int getImageWidth() {
-        return imageWidth;
+    public void setAnnotationsOne(Annotation[] a) {
+        annotationsOne = a;
+    }
+    public void setAnnotationsTwo(Annotation[] a) { annotationsTwo = a; }
+
+    public void setSourceFileOne(String src) {
+        srcFileOne = src;
+    }
+    public void setSourceFileTwo(String src) {
+        srcFileTwo = src;
     }
 
-    public int getImageHeight() {
-        return imageHeight;
+    public Annotation getAnnotationFirst(int i) {
+        return annotationsOne[i];
+    }
+    public Annotation getAnnotationSecond(int i) {
+        return annotationsTwo[i];
     }
 
-    public void setAnnotation(Annotation[] a) {
-        annotations = a;
+    public int sizeOne() {
+        return annotationsOne.length;
     }
-
-    public void setSourceFile(String src) {
-        srcFile = src;
-    }
-
-    public Annotation getAnnotation(int i) {
-        return annotations[i];
-    }
-
-    public int size() {
-        return annotations.length;
+    public int sizeTwo() {
+        return annotationsTwo.length;
     }
 
     private void writeObject(ObjectOutputStream oos) throws IOException {
-        oos.writeInt(annotations.length);
-        for(Annotation a: annotations) {
+        oos.writeInt(annotationsOne.length);
+        for(Annotation a: annotationsOne) {
             a.writeObject(oos);
         }
-        oos.writeUTF(filePath == null ? nullstr : filePath);
-        oos.writeUTF(srcFile == null ? nullstr : srcFile);
-        oos.writeInt(imageWidth);
-        oos.writeInt(imageHeight);
+        oos.writeUTF(filePathOne == null ? nullstr : filePathOne);
+        oos.writeInt(annotationsTwo.length);
+        for(Annotation a: annotationsTwo) {
+            a.writeObject(oos);
+        }
+        oos.writeUTF(filePathTwo == null ? nullstr : filePathTwo);
+        oos.writeUTF(srcFileOne == null ? nullstr : srcFileOne);
+        oos.writeUTF(srcFileOne == null ? nullstr : srcFileOne);
     }
 
     private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-        final int lim = ois.readInt();
-        annotations = new Annotation[lim];
+        int lim = ois.readInt();
+        annotationsOne = new Annotation[lim];
         for(int i = 0; i<lim; ++i) {
-            (annotations[i] = new Annotation()).readObject(ois);
+            (annotationsOne[i] = new Annotation()).readObject(ois);
         }
-        filePath = ois.readUTF();
-        filePath = filePath.equals(nullstr) ? null : filePath;
+        filePathOne = ois.readUTF();
+        filePathOne = filePathOne.equals(nullstr) ? null : filePathOne;
 
-        srcFile = ois.readUTF();
-        srcFile = srcFile.equals(nullstr) ? null : srcFile;
-        imageWidth = ois.readInt();
-        imageHeight = ois.readInt();
+        lim = ois.readInt();
+        annotationsTwo = new Annotation[lim];
+        for(int i = 0; i<lim; ++i) {
+            (annotationsTwo[i] = new Annotation()).readObject(ois);
+        }
+        filePathTwo = ois.readUTF();
+        filePathTwo = filePathTwo.equals(nullstr) ? null : filePathTwo;
+
+        srcFileOne = ois.readUTF();
+        srcFileOne = srcFileOne.equals(nullstr) ? null : srcFileOne;
+        srcFileTwo = ois.readUTF();
+        srcFileTwo = srcFileTwo.equals(nullstr) ? null : srcFileTwo;
     }
 
-    public CharBuffer outform() throws IOException {
+    private void annotBuffer(Annotation ant, CharBuffer buffer) {
+        buffer.append(ant.getRTag());
+        buffer.append('\n');
+        buffer.appendlnNC(ant.getDescription());
+        String wr = ant.getConfidence() != -1f ? Float.toString(ant.getConfidence()) : "";
+        buffer.appendln(wr);
+        if(ant.getRect() == null) {
+            buffer.appendln(0);
+        } else {
+            Rect rect = ant.getRect();
+            buffer.appendln(4);
+            buffer.appendln(rect.left);
+            buffer.appendln(rect.top);
+            buffer.appendln(rect.right);
+            buffer.appendln(rect.bottom);
+        }
+    }
+
+    public CharBuffer outform() {
         CharBuffer buffer = new CharBuffer(10);
-        buffer.appendln(filePath);
-        buffer.appendln(imageWidth);
-        buffer.appendln(imageHeight);
-        buffer.appendln(annotations.length);
-        for(Annotation ant: annotations) {
-            buffer.append(ant.getRTag());
-            buffer.append('\n');
-            buffer.appendlnNC(ant.getDescription());
-            String wr = ant.getConfidence() != -1f ? Float.toString(ant.getConfidence()) : "";
-            buffer.appendln(wr);
-            if(ant.getRect() == null) {
-                buffer.appendln(0);
-            } else {
-                Rect rect = ant.getRect();
-                buffer.appendln(4);
-                buffer.appendln(rect.left);
-                buffer.appendln(rect.top);
-                buffer.appendln(rect.right);
-                buffer.appendln(rect.bottom);
-            }
+        buffer.appendln(filePathOne);
+        buffer.appendln(filePathTwo);
+        buffer.appendln(annotationsOne.length);
+        for(Annotation ant: annotationsOne) {
+            annotBuffer(ant, buffer);
+        }
+        buffer.appendln(annotationsTwo.length);
+        for(Annotation ant: annotationsTwo) {
+            annotBuffer(ant, buffer);
         }
         return buffer;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s %s %s", Arrays.toString(annotations), filePath, srcFile);
     }
 }
