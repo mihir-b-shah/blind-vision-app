@@ -12,7 +12,6 @@ import static java.lang.Math.*;
 public class PhotoUtils {
     private static CameraManager manager;
     private static float[][] rotMatrices;
-    private static int ctr;
     private static double[] cacheAngles;
 
     /**
@@ -27,7 +26,6 @@ public class PhotoUtils {
     static {
         rotMatrices = new float[2][];
         cacheAngles = new double[2];
-        ctr = 0;
     }
 
     private static void setup() {
@@ -45,24 +43,12 @@ public class PhotoUtils {
         private final double mgn;
         private final double dir;
 
-        public PolarVector(double mgn, double dir) {
+        PolarVector(double mgn, double dir) {
             this.mgn = mgn; this.dir = dir;
         }
 
         public double getMgn() {return mgn;}
         public double getDir() {return dir;}
-    }
-
-    public static void setCameraManager(CameraManager manager) {
-        PhotoUtils.manager = manager;
-    }
-
-    public static void addRotationMatrix(float[] rotMatrix) {
-        rotMatrices[ctr++] = rotMatrix;
-    }
-
-    public static void freeReference() {
-        manager = null;
     }
 
     private static class DirVector {
@@ -76,7 +62,18 @@ public class PhotoUtils {
         }
     }
 
-    public static PolarVector calcTrajectory(Annotation a1, Annotation a2) {
+    public static PolarVector calcTrajectory(CameraManager manager, Annotation a1, Annotation a2,
+                                             float[] rotMat1, float[] rotMat2) {
+        PhotoUtils.manager = manager;
+        rotMatrices[0] = rotMat1; rotMatrices[1] = rotMat2;
+        correct(a1); correct(a2);
+        setup();
+        PolarVector polarVector = calcTrajectory(a1, a2);
+        manager = null;
+        return polarVector;
+    }
+
+    private static PolarVector calcTrajectory(Annotation a1, Annotation a2) {
         final int HALF = CustomCamera.CAMERA_HEIGHT >>> 1;
         final DirVector v1 = getLocationVector(0,
                 a1.getRect().exactCenterY()/HALF - 0.5);
@@ -94,7 +91,7 @@ public class PhotoUtils {
                         a1.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH - 0.5));
     }
 
-    public static DirVector getLocationVector(int index, double normVertical) {
+    private static DirVector getLocationVector(int index, double normVertical) {
         double theta = getVerticalAngle(normVertical);
         cacheAngles[index] = theta;
         float[] rotMatrix = rotMatrices[index];
@@ -118,7 +115,7 @@ public class PhotoUtils {
         return atan(normHorizontal*tan(2*atan(size.getWidth()/focLength)));
     }
 
-    public static void correct(Annotation annot) {
+    private static void correct(Annotation annot) {
         try {
             final float[] K = manager.getCameraCharacteristics(getNormCamera())
                     .get(CameraCharacteristics.LENS_RADIAL_DISTORTION);
