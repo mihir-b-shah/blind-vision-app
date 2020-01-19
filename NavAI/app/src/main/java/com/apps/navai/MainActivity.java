@@ -39,15 +39,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Session session;
-    private float[] calibrVect;
     private float initDir;
     private String spkText;
-    private Annotation convgd;
-    private String adjectives;
     private String mCurrentPhotoPath;
+    private String photoPath2;
     private AudioManager audioManager;
     private boolean first = true;
-    private Calibrate.DirVector photoVect;
+    private float[] rotMat;
+    private float[] rotMat2;
+
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         @SuppressWarnings("deprecation")
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
                         next.putExtra(FLOAT_1, initDir);
                         startActivityForResult(next, 12);
                         break;
-                    case 5:
+                    case 6:
                         System.out.println("Got out of CallAPI!");
                         session = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), Converge.class);
@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
                         next.putExtra(INT_1, 6);
                         startService(next);
                         break;
-                    case 6:
+                    case 7:
                         session = (Session) intent.getSerializableExtra("session");
                         Annotation annot = session.getAnnotation(0);
                         boolean right;
@@ -171,7 +171,13 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case 4:
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
-                    photoVect = (Calibrate.DirVector) data.getSerializableExtra("vector");
+                    rotMat = data.getFloatArrayExtra("rot-mat");
+                    next = new Intent(getApplicationContext(), CustomCamera.class);
+                    startActivityForResult(next, 5);
+                    break;
+                case 5:
+                    photoPath2 = data.getStringExtra("photo-path");
+                    rotMat2 = data.getFloatArrayExtra("rot-mat");
                     next = new Intent(getApplicationContext(), CallAPI.class);
                     next.putExtra(STRING_1, mCurrentPhotoPath);
                     next.putExtra(STRING_2, "READFILE");

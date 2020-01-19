@@ -8,30 +8,24 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.IBinder;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import androidx.annotation.Nullable;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.Arrays;
 
-import static com.apps.navai.MainActivity.FLOAT_1;
 import static com.apps.navai.MainActivity.INT_1;
-import static java.lang.Math.*;
 
 public class Calibrate extends Service implements SensorEventListener {
 
-    public static final float DIR_NOTEXIST = -100f;
     private SensorManager mSensorManager;
     private Sensor[] sensors;
     private float[][] data;
     private boolean set;
-    private float initDir;
     private int ctr;
     private int id;
+
+    public static final float DIR_NOTEXIST = -100f;
 
     public Calibrate() {}
 
@@ -43,7 +37,6 @@ public class Calibrate extends Service implements SensorEventListener {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         id = intent.getIntExtra(INT_1, -1);
-        initDir = intent.getFloatExtra(FLOAT_1,DIR_NOTEXIST);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         sensors = new Sensor[2];
         sensors[0] = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -91,21 +84,16 @@ public class Calibrate extends Service implements SensorEventListener {
         float[] inclination = new float[9];
         boolean rotationOK = SensorManager.getRotationMatrix(rotationMatrix,
                 inclination, data[0], data[1]);
-
-        float[] orientationValues = new float[3];
-        if (rotationOK)
-            SensorManager.getOrientation(rotationMatrix, orientationValues);
+        if(rotationOK) {
+            return;
+        }
 
         if(ctr > getNumSamples()) {
             Intent out = new Intent(MainActivity.SERVICE_RESPONSE);
             mSensorManager.unregisterListener(this, sensors[0]);
             mSensorManager.unregisterListener(this, sensors[1]);
 
-            if(initDir == DIR_NOTEXIST) {
-                out.putExtra("currdir", orientationValues[0]);
-            } else {
-                out.putExtra("vector", new DirVector(orientationValues, initDir));
-            }
+            out.putExtra("rot-mat", rotationMatrix);
             out.putExtra(INT_1, id);
             LocalBroadcastManager.getInstance(getApplicationContext())
                     .sendBroadcast(out);
@@ -124,42 +112,6 @@ public class Calibrate extends Service implements SensorEventListener {
             }
         }
         return true;
-    }
-
-    public class DirVector implements Serializable {
-        private float x,y,z;
-        private final transient float A,P,R;
-
-        public DirVector(float[] APR, float a0) {
-            A = APR[0]; P = APR[1]; R = APR[2];
-            x = (float) (cos(APR[0]-a0)*sin(APR[2])-sin(APR[0]-a0)*sin(APR[1])*cos(APR[2]));
-            y = (float) (-sin(APR[0]-a0)*sin(APR[2])-cos(APR[0]-a0)*sin(APR[1])*cos(APR[2]));
-            z = (float) (cos(APR[1])*cos(APR[2]));
-        }
-
-        public float getX() {return x;}
-        public float getY() {return y;}
-        public float getZ() {return z;}
-
-        public float getAzimuth() {return A;}
-        public float getPitch() {return P;}
-        public float getRoll() {return R;}
-
-        public DirVector update(float[] APR, float a0) {
-            return new DirVector(APR, a0);
-        }
-
-        private void writeObject(ObjectOutputStream oos) throws IOException {
-            oos.writeFloat(x);
-            oos.writeFloat(y);
-            oos.writeFloat(z);
-        }
-
-        private void readObject(ObjectInputStream ois) throws IOException {
-            x = ois.readFloat();
-            y = ois.readFloat();
-            z = ois.readFloat();
-        }
     }
 
     @Override

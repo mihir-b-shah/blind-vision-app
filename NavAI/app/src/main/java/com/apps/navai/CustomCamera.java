@@ -42,7 +42,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static com.apps.navai.MainActivity.FLOAT_1;
 import static com.apps.navai.MainActivity.INT_1;
 import static com.apps.navai.MainActivity.SERVICE_RESPONSE;
 
@@ -56,7 +55,6 @@ public class CustomCamera extends AppCompatActivity {
     private CameraCaptureSession session;
     private SurfaceHolder surfaceHolder;
     private String mCurrentPhotoPath;
-    private float a0;
     private int previewCtr = 25;
 
     private boolean configured;
@@ -74,18 +72,20 @@ public class CustomCamera extends AppCompatActivity {
     private static final int STATE_WAITING_NON_PRECAPTURE = 3;
     private static final int STATE_TAKEN = 4;
 
+    public static final int CAMERA_WIDTH = 1920;
+    public static final int CAMERA_HEIGHT = 1080;
+
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if(intent.getAction() != null && intent.getAction().equals(SERVICE_RESPONSE)) {
                 int code = intent.getIntExtra(INT_1, -1);
                 if (code == 1) {
-                    Calibrate.DirVector vect = (Calibrate.DirVector)
-                            intent.getSerializableExtra("vector");
+                    float[] rotMat = intent.getFloatArrayExtra("rot-mat");
                     System.out.println("Got the dir vector!");
                     Intent next = new Intent();
                     next.putExtra("photo-path", mCurrentPhotoPath);
-                    next.putExtra("vector", vect);
+                    next.putExtra("rot-mat", rotMat);
                     CustomCamera.this.setResult(Activity.RESULT_OK, next);
                     CustomCamera.this.finish();
                 }
@@ -321,7 +321,6 @@ public class CustomCamera extends AppCompatActivity {
                 mCurrentPhotoPath = file.getAbsolutePath();
                 Intent next = new Intent(getApplicationContext(), Calibrate.class);
                 next.putExtra(INT_1, 1);
-                next.putExtra(FLOAT_1, a0);
                 startService(next);
             }
         }
@@ -376,7 +375,6 @@ public class CustomCamera extends AppCompatActivity {
         }
         tg.release();
 
-        a0 = getIntent().getFloatExtra("initDir",0);
         cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         backThread = new HandlerThread("CameraBackground");
         backThread.start();
@@ -420,7 +418,7 @@ public class CustomCamera extends AppCompatActivity {
     private void openCamera() {
         try {
             imageReader = ImageReader.newInstance(
-                    1920, 1080, ImageFormat.JPEG, 2);
+                    CAMERA_WIDTH, CAMERA_HEIGHT, ImageFormat.JPEG, 2);
             imageReader.setOnImageAvailableListener(reader -> {
                 if(state == STATE_TAKEN) {
                     Image img = reader.acquireLatestImage();
