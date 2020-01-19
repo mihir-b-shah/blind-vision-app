@@ -70,18 +70,24 @@ public class MainActivity extends AppCompatActivity {
                         initDir = intent.getFloatExtra("currdir", Calibrate.DIR_NOTEXIST);
                         next = new Intent(getApplicationContext(), CustomCamera.class);
                         next.putExtra(FLOAT_1, initDir);
-                        startActivityForResult(next, 12);
+                        startActivityForResult(next, 4);
                         break;
                     case 6:
-                        System.out.println("Got out of CallAPI!");
+                        next = new Intent(getApplicationContext(), CallAPI.class);
+                        next.putExtra(STRING_1, photoPath2);
+                        next.putExtra(STRING_2, "READFILE_TWO");
+                        next.putExtra(STRING_3, (String) null);
+                        next.putExtra(INT_1, 7);
+                        startService(next);
+                    case 7:
                         session = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), Converge.class);
                         next.putExtra(STRING_2, session);
                         next.putExtra(STRING_1, spkText);
-                        next.putExtra(INT_1, 6);
+                        next.putExtra(INT_1, 8);
                         startService(next);
                         break;
-                    case 7:
+                    case 8:
                         session = (Session) intent.getSerializableExtra("session");
                         Annotation annot = session.getAnnotation(0);
                         boolean right;
@@ -92,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
                         next = new Intent(getApplicationContext(), Speak.class);
                         next.putExtra(STRING_1, "The object found is to your " +
                                 (right ? "right" : "left"));
-                        next.putExtra(INT_1, 7);
+                        next.putExtra(INT_1, 9);
                         startService(next);
                         break;
                     default:
@@ -128,6 +134,9 @@ public class MainActivity extends AppCompatActivity {
         spkText = st == null ? null : st.getString("spk-text");
         first = st == null;
         initDir = st == null ? Calibrate.DIR_NOTEXIST : st.getFloat("init-dir");
+        rotMat = st == null ? null : st.getFloatArray("rot-mat-1");
+        rotMat2 = st == null ? null : st.getFloatArray("rot-mat-2");
+        photoPath2 = st == null ? null : st.getString("photo-path-2");
 
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
@@ -155,6 +164,9 @@ public class MainActivity extends AppCompatActivity {
         b.putString("photo-path", mCurrentPhotoPath);
         b.putString("spk-text", spkText);
         b.putFloat("init-dir", initDir);
+        b.putString("photo-path-2", photoPath2);
+        b.putFloatArray("rot-mat-1", rotMat);
+        b.putFloatArray("rot-mat-2", rotMat2);
     }
 
     @Override
@@ -182,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
                     next.putExtra(STRING_1, mCurrentPhotoPath);
                     next.putExtra(STRING_2, "READFILE");
                     next.putExtra(STRING_3, (String) null);
-                    next.putExtra(INT_1, 5);
+                    next.putExtra(INT_1, 6);
                     startService(next);
                     break;
                 default:

@@ -56,7 +56,10 @@ public class PhotoUtils {
     public static void setCameraManager(CameraManager manager) {
         PhotoUtils.manager = manager;
     }
-    public static void addRotationMatrix(float[] rotMatrix) {rotMatrices[ctr++] = rotMatrix;}
+
+    public static void addRotationMatrix(float[] rotMatrix) {
+        rotMatrices[ctr++] = rotMatrix;
+    }
 
     public static void freeReference() {
         manager = null;
@@ -67,10 +70,6 @@ public class PhotoUtils {
         DirVector(double x, double y, double z) {
             this.x = x; this.y = y; this.z = z;
         }
-
-        public double getX() {return x;}
-        public double getY() {return y;}
-        public double getZ() {return z;}
 
         static double dot(DirVector v1, DirVector v2) {
             return v1.x*v2.x+v1.y*v2.y+v1.z*v2.z;
