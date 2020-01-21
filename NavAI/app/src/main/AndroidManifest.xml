@@ -49,11 +49,6 @@
             android:exported="false" />
 
         <activity android:name=".ArduinoSensor" />
-
-        <service
-            android:name=".CalibrateHelp"
-            android:enabled="true"
-            android:exported="true" />
         <service
             android:name=".Calibrate"
             android:enabled="true"

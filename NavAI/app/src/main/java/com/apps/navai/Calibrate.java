@@ -84,7 +84,7 @@ public class Calibrate extends Service implements SensorEventListener {
         float[] inclination = new float[9];
         boolean rotationOK = SensorManager.getRotationMatrix(rotationMatrix,
                 inclination, data[0], data[1]);
-        if(rotationOK) {
+        if(!rotationOK) {
             return;
         }
 
@@ -93,6 +93,7 @@ public class Calibrate extends Service implements SensorEventListener {
             mSensorManager.unregisterListener(this, sensors[0]);
             mSensorManager.unregisterListener(this, sensors[1]);
 
+            System.out.println("Got the rotation matrix!");
             out.putExtra("rot-mat", rotationMatrix);
             out.putExtra(INT_1, id);
             LocalBroadcastManager.getInstance(getApplicationContext())

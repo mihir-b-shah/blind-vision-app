@@ -156,6 +156,8 @@ public class CallAPI extends IntentService {
                 recText = firebaseVisionText;
                 System.out.println(recText.getText());
                 convert();
+
+                // PROBLEM SPOT
                 session.genDescriptions(0);
                 session.genDescriptions(1);
 

@@ -5,9 +5,9 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import androidx.annotation.Nullable;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.Locale;
 

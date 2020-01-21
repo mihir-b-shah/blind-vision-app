@@ -58,6 +58,8 @@ public class CustomCamera extends AppCompatActivity {
     private int previewCtr = 25;
 
     private boolean configured;
+    private int captureCtr;
+    private int toneCtr;
     private int state;
 
     private static final int VOLUME = 85;
@@ -97,6 +99,13 @@ public class CustomCamera extends AppCompatActivity {
     private File file;
     private HandlerThread backThread;
 
+    @Override
+    protected void onSaveInstanceState(Bundle bundle) {
+        super.onSaveInstanceState(bundle);
+        bundle.putInt("call-count", captureCtr);
+        bundle.putInt("tone-count", toneCtr);
+    }
+
     private void capturePicture() {
         try {
             CaptureRequest.Builder localBuilder =
@@ -106,7 +115,9 @@ public class CustomCamera extends AppCompatActivity {
             localBuilder.addTarget(surfaceHolder.getSurface());
             localBuilder.addTarget(imageReader.getSurface());
             localBuilder.set(CaptureRequest.CONTROL_AF_MODE,
-                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                    CaptureRequest.CONTROL_AF_MODE_AUTO);
+            localBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                    CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
             CaptureRequest req = localBuilder.build();
             localBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
 
@@ -118,7 +129,7 @@ public class CustomCamera extends AppCompatActivity {
         }
     }
 
-    private void precapture() {
+    private void preCapture() {
         builder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
                 CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START);
         state = STATE_WAITING_PRECAPTURE;
@@ -189,7 +200,7 @@ public class CustomCamera extends AppCompatActivity {
                             state = STATE_TAKEN;
                             capturePicture();
                         } else {
-                            precapture();
+                            preCapture();
                         }
                     }
                     break;
@@ -318,6 +329,7 @@ public class CustomCamera extends AppCompatActivity {
                     }
                 }
                 System.out.println("Got to intent!");
+                ++CustomCamera.this.captureCtr;
                 mCurrentPhotoPath = file.getAbsolutePath();
                 Intent next = new Intent(getApplicationContext(), Calibrate.class);
                 next.putExtra(INT_1, 1);
@@ -344,6 +356,10 @@ public class CustomCamera extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_custom_camera);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        captureCtr = savedInstanceState == null ? 0 :
+                savedInstanceState.getInt("call-count", -1);
+        toneCtr = savedInstanceState == null ? 0 :
+                savedInstanceState.getInt("tone-count", -1);
 
         try {
             file = createImageFile();
@@ -351,29 +367,21 @@ public class CustomCamera extends AppCompatActivity {
             System.err.println(e.getMessage());
         }
 
-        final ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_SYSTEM, VOLUME);
-        Thread beep = new Thread(){
-            final int DIFF = FREQ-BEEP_LENGTH;
-            @Override
-            public void run() {
-                for(int time = 0; time<DURATION; time+=FREQ){
-                    tg.stopTone();
-                    tg.startTone(ToneGenerator.TONE_CDMA_ONE_MIN_BEEP, BEEP_LENGTH);
-                    try {
-                        sleep(DIFF);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+        if(toneCtr == captureCtr && toneCtr == 0) {
+            final ToneGenerator tg = new ToneGenerator(AudioManager.STREAM_SYSTEM, VOLUME);
+            final int DIFF = FREQ - BEEP_LENGTH;
+            for (int time = 0; time < DURATION; time += FREQ) {
+                tg.stopTone();
+                tg.startTone(ToneGenerator.TONE_CDMA_ONE_MIN_BEEP, BEEP_LENGTH);
+                try {
+                    Thread.sleep(DIFF);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
-        };
-        beep.start();
-        try {
-            beep.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            tg.release();
+            ++toneCtr;
         }
-        tg.release();
 
         cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         backThread = new HandlerThread("CameraBackground");
@@ -420,7 +428,7 @@ public class CustomCamera extends AppCompatActivity {
             imageReader = ImageReader.newInstance(
                     CAMERA_WIDTH, CAMERA_HEIGHT, ImageFormat.JPEG, 2);
             imageReader.setOnImageAvailableListener(reader -> {
-                if(state == STATE_TAKEN) {
+                if(state == STATE_TAKEN && captureCtr == 0) {
                     Image img = reader.acquireLatestImage();
                     if(img == null) return;
                     try {

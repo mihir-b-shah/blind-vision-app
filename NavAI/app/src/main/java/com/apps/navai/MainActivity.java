@@ -28,6 +28,8 @@ public class MainActivity extends AppCompatActivity {
     public static final String INT_2;
     public static final String FLOAT_1;
 
+    public static final int CAMERA_CALL_COUNT;
+
     static {
         STRING_1 = "string1_8941930";
         STRING_2 = "string2_1210210";
@@ -36,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
         INT_1 = "int1_4390403";
         INT_2 = "int2_1201021";
         FLOAT_1 = "float1_7864059";
+        CAMERA_CALL_COUNT = 2;
     }
 
     private Session session;
@@ -62,34 +65,23 @@ public class MainActivity extends AppCompatActivity {
                         first = false;
                         startActivityForResult(next, 1);
                         break;
-                    case 2:
-                        next = new Intent(getApplicationContext(), CalibrateHelp.class);
-                        next.putExtra(INT_1, 3);
-                        startService(next);
-                        break;
-                    case 3:
-                        initDir = intent.getFloatExtra("currdir", Calibrate.DIR_NOTEXIST);
-                        next = new Intent(getApplicationContext(), CustomCamera.class);
-                        next.putExtra(FLOAT_1, initDir);
-                        startActivityForResult(next, 4);
-                        break;
-                    case 6:
+                    case 4:
                         session = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), CallAPI.class);
                         next.putExtra(STRING_1, photoPath2);
                         next.putExtra(STRING_2, "READFILE_TWO");
                         next.putExtra(STRING_3, (String) null);
-                        next.putExtra(INT_1, 7);
+                        next.putExtra(INT_1, 5);
                         startService(next);
-                    case 7:
+                    case 5:
                         session2 = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), Converge.class);
                         next.putExtra(STRING_2, Session.combine(session, session2));
                         next.putExtra(STRING_1, spkText);
-                        next.putExtra(INT_1, 8);
+                        next.putExtra(INT_1, 6);
                         startService(next);
                         break;
-                    case 8:
+                    case 6:
                         session = (Session) intent.getSerializableExtra("session");
                         // DONE
                     default:
@@ -121,22 +113,25 @@ public class MainActivity extends AppCompatActivity {
             audioManager.setSpeakerphoneOn(true);
         }
 
+        /*
         mCurrentPhotoPath = st == null ? null : st.getString("photo-path");
         spkText = st == null ? null : st.getString("spk-text");
         first = st == null;
-        initDir = st == null ? Calibrate.DIR_NOTEXIST : st.getFloat("init-dir");
         rotMat = st == null ? null : st.getFloatArray("rot-mat-1");
         rotMat2 = st == null ? null : st.getFloatArray("rot-mat-2");
         photoPath2 = st == null ? null : st.getString("photo-path-2");
-
+        */
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
+        /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        if(first) startService(start);
+        if(first) startService(start); */
+        Intent start = new Intent(getApplicationContext(), CustomCamera.class);
+        startActivityForResult(start, 16);
     }
 
     @Override
@@ -154,7 +149,6 @@ public class MainActivity extends AppCompatActivity {
         super.onSaveInstanceState(b);
         b.putString("photo-path", mCurrentPhotoPath);
         b.putString("spk-text", spkText);
-        b.putFloat("init-dir", initDir);
         b.putString("photo-path-2", photoPath2);
         b.putFloatArray("rot-mat-1", rotMat);
         b.putFloatArray("rot-mat-2", rotMat2);
@@ -167,25 +161,22 @@ public class MainActivity extends AppCompatActivity {
             switch (requestCode) {
                 case 1:
                     spkText = data.getStringExtra(STRING_1);
-                    next = new Intent(getApplicationContext(), Speak.class);
-                    next.putExtra(STRING_1, "Please calibrate the phone.");
-                    next.putExtra(INT_1, 2);
-                    startService(next);
-                    break;
-                case 4:
+                    next = new Intent(getApplicationContext(), CustomCamera.class);
+                    startActivityForResult(next, 2);
+                case 2:
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
                     rotMat = data.getFloatArrayExtra("rot-mat");
                     next = new Intent(getApplicationContext(), CustomCamera.class);
-                    startActivityForResult(next, 5);
+                    startActivityForResult(next, 3);
                     break;
-                case 5:
+                case 3:
                     photoPath2 = data.getStringExtra("photo-path");
                     rotMat2 = data.getFloatArrayExtra("rot-mat");
                     next = new Intent(getApplicationContext(), CallAPI.class);
                     next.putExtra(STRING_1, mCurrentPhotoPath);
                     next.putExtra(STRING_2, "READFILE");
                     next.putExtra(STRING_3, (String) null);
-                    next.putExtra(INT_1, 6);
+                    next.putExtra(INT_1, 4);
                     startService(next);
                     break;
                 default:
