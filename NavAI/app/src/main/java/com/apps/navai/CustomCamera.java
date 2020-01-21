@@ -55,7 +55,7 @@ public class CustomCamera extends AppCompatActivity {
     private CameraCaptureSession session;
     private SurfaceHolder surfaceHolder;
     private String mCurrentPhotoPath;
-    private int previewCtr = 25;
+    private int previewCtr = 5;
 
     private boolean configured;
     private int captureCtr;
@@ -109,11 +109,27 @@ public class CustomCamera extends AppCompatActivity {
     private void capturePicture() {
         try {
             CaptureRequest.Builder localBuilder =
-                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             localBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                     CameraMetadata.CONTROL_AF_TRIGGER_START);
             localBuilder.addTarget(surfaceHolder.getSurface());
             localBuilder.addTarget(imageReader.getSurface());
+            localBuilder.set(CaptureRequest.EDGE_MODE,
+                    CameraMetadata.EDGE_MODE_HIGH_QUALITY);
+            localBuilder.set(CaptureRequest.SHADING_MODE,
+                    CameraMetadata.SHADING_MODE_HIGH_QUALITY);
+            localBuilder.set(CaptureRequest.TONEMAP_MODE,
+                    CameraMetadata.TONEMAP_MODE_HIGH_QUALITY);
+            localBuilder.set(CaptureRequest.COLOR_CORRECTION_ABERRATION_MODE,
+                    CameraMetadata.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY);
+            localBuilder.set(CaptureRequest.COLOR_CORRECTION_MODE,
+                    CameraMetadata.COLOR_CORRECTION_ABERRATION_MODE_HIGH_QUALITY);
+            localBuilder.set(CaptureRequest.HOT_PIXEL_MODE,
+                    CameraMetadata.HOT_PIXEL_MODE_HIGH_QUALITY);
+            localBuilder.set(CaptureRequest.NOISE_REDUCTION_MODE,
+                    CameraMetadata.NOISE_REDUCTION_MODE_HIGH_QUALITY);
+            localBuilder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE,
+                    CameraMetadata.LENS_OPTICAL_STABILIZATION_MODE_ON);
             localBuilder.set(CaptureRequest.CONTROL_AF_MODE,
                     CaptureRequest.CONTROL_AF_MODE_AUTO);
             localBuilder.set(CaptureRequest.CONTROL_AE_MODE,
