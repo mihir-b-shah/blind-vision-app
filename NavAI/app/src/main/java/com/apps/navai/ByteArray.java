@@ -2,14 +2,14 @@ package com.apps.navai;
 
 import java.util.Arrays;
 
-public class ByteBuffer {
+public class ByteArray {
     private byte[] buffer;
     private int size;
 
-    ByteBuffer() {
+    ByteArray() {
         buffer = new byte[2];
     }
-    ByteBuffer(int N) { buffer = new byte[N];}
+    ByteArray(int N) { buffer = new byte[N];}
 
     public void add(byte b) {
         if(buffer.length == size) {

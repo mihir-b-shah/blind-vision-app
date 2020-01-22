@@ -116,6 +116,50 @@ public class CallAPI extends IntentService {
         return photoMap.get(1);
     }
 
+    public static Bitmap filter(Bitmap image) {
+        Bitmap newImage = Bitmap.createBitmap(image.getWidth(),
+                image.getHeight(), Bitmap.Config.ARGB_8888);
+        final int[] kernel = {-1,-1,-1,-1,9,-1,-1,-1,-1};
+        final int numBands = 3;
+        int[] maxValues = new int[numBands];
+        int[] masks = new int[numBands];
+        int[] sampleSizes = {8,8,8};
+
+        for (int i=0; i < numBands; ++i){
+            maxValues[i] = (1 << sampleSizes[i]) - 1;
+            masks[i] = ~(maxValues[i]);
+        }
+
+        // Cycle over pixels to be calculated
+        for (int i = 1; i < image.getHeight()-kernel.length; ++i){
+            for (int j = 1; j < image.getWidth()-kernel.length; ++j){
+                // Take kernel data in backward direction, convolution
+                int kernelIdx = kernel.length - 1;
+                int currPixel = image.getPixel(i,j);
+                for (int hIdx = 0, rasterHIdx = i - 1; hIdx < kernel.length; ++hIdx, ++rasterHIdx){
+                    for (int wIdx = 0, rasterWIdx = j - 1; wIdx < kernel.length; ++wIdx, ++rasterWIdx){
+                        int pixel = 0;
+                        for (int idx=0; idx < numBands; ++idx){
+                            pixel <<= sampleSizes[idx];
+                            pixel += kernel[kernelIdx]*(currPixel >> i*sampleSizes[i] & masks[i]);
+                        }
+                        --kernelIdx;
+                        newImage.setPixel(i,j,pixel);
+                    }
+                }
+                // Check for overflow
+                currPixel = newImage.getPixel(i,j);
+                for (int idx=0; idx < numBands; ++idx){
+                    if ((currPixel >> i*sampleSizes[i] & masks[i]) != 0) {
+                        currPixel = currPixel < 0 ? 0 : maxValues[idx];
+                    }
+                }
+            }
+        }
+
+        return newImage;
+    }
+
     private void objectRecognize() {
         /* params[0] = absolute path of the photo */
         BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
@@ -124,6 +168,7 @@ public class CallAPI extends IntentService {
         bitmapOptions.outWidth = CustomCamera.CAMERA_WIDTH;
         bitmapOptions.outHeight = CustomCamera.CAMERA_HEIGHT;
         Bitmap bitmap = BitmapFactory.decodeFile(imagepath, bitmapOptions);
+        bitmap = filter(bitmap);
         photoMap.add(bitmap);
 
         FirebaseVisionObjectDetectorOptions options =
