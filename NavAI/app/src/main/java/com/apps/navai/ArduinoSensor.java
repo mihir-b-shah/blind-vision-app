@@ -1,23 +1,22 @@
 package com.apps.navai;
 
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.physicaloid.lib.Physicaloid;
-import com.physicaloid.lib.usb.driver.uart.ReadLisener;
 
 public class ArduinoSensor extends AppCompatActivity implements DataStream.SpeedListener {
 
     private Physicaloid phy;
-    private ByteBuffer buf;
+    private ByteArray buf;
     private DataStream stream;
 
     public ArduinoSensor() {
         stream = new DataStream(0.99f, this); // set
-        buf = new ByteBuffer(12); // grows by expand()
+        buf = new ByteArray(12); // grows by expand()
     }
 
     @Override
@@ -27,14 +26,11 @@ public class ArduinoSensor extends AppCompatActivity implements DataStream.Speed
         phy.setBaudrate(9600);
 
         if(phy.open()) {
-            phy.addReadListener(new ReadLisener() {
-                @Override
-                public void onRead(int i) {
-                    buf.expand(i);
-                    phy.read(buf.getBuffer(), i);
-                    Log.v("Buffer val", buf.limString(i));
-                    stream.enqueue(buf.getBuffer(), i);
-                }
+            phy.addReadListener(i -> {
+                buf.expand(i);
+                phy.read(buf.getBuffer(), i);
+                Log.v("Buffer val", buf.limString(i));
+                stream.enqueue(buf.getBuffer(), i);
             });
         }
     }

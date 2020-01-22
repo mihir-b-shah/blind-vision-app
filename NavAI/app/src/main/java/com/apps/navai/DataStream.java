@@ -18,7 +18,7 @@ public class DataStream {
     private static final double EPSILON = 1e-5;
 
     private final DblStack stack;
-    private final ByteBuffer queue;
+    private final ByteArray queue;
     private final CircularBuffer buffer;
 
     private class DblStack {
@@ -95,7 +95,7 @@ public class DataStream {
         this.listener = listener;
         stack = new DblStack(5);
         stack.push(0); stack.push(-1);
-        queue = new ByteBuffer(3);
+        queue = new ByteArray(3);
         buffer = new CircularBuffer(64);
     }
 
