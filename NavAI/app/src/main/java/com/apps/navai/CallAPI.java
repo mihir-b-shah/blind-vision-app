@@ -131,10 +131,15 @@ public class CallAPI extends IntentService {
         ScriptIntrinsicConvolve3x3 convolution = ScriptIntrinsicConvolve3x3.create(
                 rs, Element.U8_4(rs));
         convolution.setInput(input);
+
         final float[] kernel = {-1f,-1f,-1f,-1f,9f,-1f,-1f,-1f,-1f};
         convolution.setCoefficients(kernel);
         convolution.forEach(output);
         output.copyTo(newImage);
+
+        input.destroy(); output.destroy();
+        rs.destroy();
+
         return newImage;
     }
 

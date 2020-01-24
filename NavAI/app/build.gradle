@@ -7,7 +7,7 @@ android {
         applicationId "com.apps.navai"
         minSdkVersion 24
         targetSdkVersion 29
-        renderscriptTargetApi 29
+        renderscriptTargetApi 24
         renderscriptSupportModeEnabled true
         versionCode 1
         versionName "1.0"
