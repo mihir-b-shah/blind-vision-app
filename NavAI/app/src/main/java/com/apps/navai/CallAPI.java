@@ -6,6 +6,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.os.Environment;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicConvolve3x3;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -116,47 +120,21 @@ public class CallAPI extends IntentService {
         return photoMap.get(1);
     }
 
-    public static Bitmap filter(Bitmap image) {
+    // kind of inefficient but whatever
+    public Bitmap filter(Bitmap image) {
         Bitmap newImage = Bitmap.createBitmap(image.getWidth(),
                 image.getHeight(), Bitmap.Config.ARGB_8888);
-        final int[] kernel = {-1,-1,-1,-1,9,-1,-1,-1,-1};
-        final int numBands = 3;
-        int[] maxValues = new int[numBands];
-        int[] masks = new int[numBands];
-        int[] sampleSizes = {8,8,8};
+        RenderScript rs = RenderScript.create(this);
+        Allocation input = Allocation.createFromBitmap(rs, image);
+        Allocation output = Allocation.createFromBitmap(rs, newImage);
 
-        for (int i=0; i < numBands; ++i){
-            maxValues[i] = (1 << sampleSizes[i]) - 1;
-            masks[i] = ~(maxValues[i]);
-        }
-
-        // Cycle over pixels to be calculated
-        for (int i = 1; i < image.getHeight()-kernel.length; ++i){
-            for (int j = 1; j < image.getWidth()-kernel.length; ++j){
-                // Take kernel data in backward direction, convolution
-                int kernelIdx = kernel.length - 1;
-                int currPixel = image.getPixel(i,j);
-                for (int hIdx = 0, rasterHIdx = i - 1; hIdx < kernel.length; ++hIdx, ++rasterHIdx){
-                    for (int wIdx = 0, rasterWIdx = j - 1; wIdx < kernel.length; ++wIdx, ++rasterWIdx){
-                        int pixel = 0;
-                        for (int idx=0; idx < numBands; ++idx){
-                            pixel <<= sampleSizes[idx];
-                            pixel += kernel[kernelIdx]*(currPixel >> i*sampleSizes[i] & masks[i]);
-                        }
-                        --kernelIdx;
-                        newImage.setPixel(i,j,pixel);
-                    }
-                }
-                // Check for overflow
-                currPixel = newImage.getPixel(i,j);
-                for (int idx=0; idx < numBands; ++idx){
-                    if ((currPixel >> i*sampleSizes[i] & masks[i]) != 0) {
-                        currPixel = currPixel < 0 ? 0 : maxValues[idx];
-                    }
-                }
-            }
-        }
-
+        ScriptIntrinsicConvolve3x3 convolution = ScriptIntrinsicConvolve3x3.create(
+                rs, Element.U8_4(rs));
+        convolution.setInput(input);
+        final float[] kernel = {-1f,-1f,-1f,-1f,9f,-1f,-1f,-1f,-1f};
+        convolution.setCoefficients(kernel);
+        convolution.forEach(output);
+        output.copyTo(newImage);
         return newImage;
     }
 
