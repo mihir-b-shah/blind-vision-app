@@ -137,9 +137,6 @@ public class CallAPI extends IntentService {
         convolution.forEach(output);
         output.copyTo(newImage);
 
-        input.destroy(); output.destroy();
-        rs.destroy();
-
         return newImage;
     }
 
@@ -171,7 +168,7 @@ public class CallAPI extends IntentService {
                         textRecognize(image);
                     })
             .addOnFailureListener(
-                    e -> System.err.printf("Error encountered in send."));
+                    e -> System.err.printf("Error encountered in object send."));
     }
 
     private void textRecognize(FirebaseVisionImage image) {
@@ -185,7 +182,7 @@ public class CallAPI extends IntentService {
                 System.out.println(recText.getText());
                 convert();
 
-                // PROBLEM SPOT
+                // PROBLEM SPOT ok lets fix it then
                 session.genDescriptions(0);
                 session.genDescriptions(1);
 
@@ -201,7 +198,8 @@ public class CallAPI extends IntentService {
                 }
                 })
                 .addOnFailureListener(
-                        e -> System.err.println("Error encountered in send."));
+                        // Getting exception here
+                        e -> System.err.println("Error encountered in text send."));
     }
 
     public void dump(String path) {
