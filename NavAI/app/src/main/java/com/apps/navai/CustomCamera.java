@@ -2,10 +2,8 @@ package com.apps.navai;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
@@ -32,7 +30,6 @@ import android.view.SurfaceView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -40,13 +37,9 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Queue;
-
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
-
-import static com.apps.navai.MainActivity.INT_1;
-import static com.apps.navai.MainActivity.SERVICE_RESPONSE;
 
 public class CustomCamera extends AppCompatActivity {
 
@@ -82,25 +75,6 @@ public class CustomCamera extends AppCompatActivity {
     public static final int CAMERA_HEIGHT = 1080;
 
     private static final int QUEUE_SIZE = 4;
-
-    private final BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if(intent.getAction() != null && intent.getAction().equals(SERVICE_RESPONSE)) {
-                int code = intent.getIntExtra(INT_1, -1);
-                if (code == 102) {
-                    float[] rotMat = intent.getFloatArrayExtra("rot-mat");
-                    System.out.println("Got the dir vector!");
-                    Intent next = new Intent();
-                    next.putExtra("photo-path", mCurrentPhotoPath);
-                    next.putExtra("rot-mat", rotMat);
-                    finalClose();
-                    CustomCamera.this.setResult(Activity.RESULT_OK, next);
-                    CustomCamera.this.finish();
-                }
-            }
-        }
-    };
 
     private Handler handler;
     private HandlerThread backThread;
@@ -175,9 +149,11 @@ public class CustomCamera extends AppCompatActivity {
                             System.err.println(e.getMessage());
                         }
 
-                        Intent next = new Intent(getApplicationContext(), Calibrate.class);
-                        next.putExtra(INT_1, 102);
-                        runOnUiThread(() -> startService(next));
+                        Intent next = new Intent();
+                        next.putExtra("photo-path", mCurrentPhotoPath);
+                        finalClose();
+                        CustomCamera.this.setResult(Activity.RESULT_OK, next);
+                        CustomCamera.this.finish();
                     }
                 }
     };
@@ -429,12 +405,12 @@ public class CustomCamera extends AppCompatActivity {
         notFirst = savedInstanceState != null && savedInstanceState.getBoolean("not-first");
         System.out.println("notFirst: " + notFirst);
 
+        /*
         if(notFirst) {
             return;
         } else {
             notFirst = true;
-        }
-
+        } */
 
         images = new ArrayDeque<>(QUEUE_SIZE);
 
@@ -459,9 +435,6 @@ public class CustomCamera extends AppCompatActivity {
         backThread = new HandlerThread("CameraBackground");
         backThread.start();
         handler = new Handler(backThread.getLooper());
-
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
-                receiver, new IntentFilter(SERVICE_RESPONSE));
 
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {

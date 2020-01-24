@@ -61,15 +61,19 @@ public class MainActivity extends AppCompatActivity {
                 Intent next;
                 switch (code) {
                     case 0:
+                        System.out.println("Arrived at case 0");
                         next = new Intent(getApplicationContext(), WordInput.class);
                         first = false;
                         startActivityForResult(next, 1);
                         break;
                     case 3:
+                        System.out.println("Arrived at case 3");
                         rotMat = intent.getFloatArrayExtra("rot-mat");
                         next = new Intent(getApplicationContext(), CustomCamera.class);
                         startActivityForResult(next, 4);
+                        break;
                     case 5:
+                        System.out.println("Arrived at case 5");
                         rotMat2 = intent.getFloatArrayExtra("rot-mat");
                         next = new Intent(getApplicationContext(), CallAPI.class);
                         next.putExtra(STRING_1, mCurrentPhotoPath);
@@ -77,7 +81,9 @@ public class MainActivity extends AppCompatActivity {
                         next.putExtra(STRING_3, (String) null);
                         next.putExtra(INT_1, 6);
                         startService(next);
+                        break;
                     case 6:
+                        System.out.println("Arrived at case 6");
                         session = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), CallAPI.class);
                         next.putExtra(STRING_1, photoPath2);
@@ -85,7 +91,9 @@ public class MainActivity extends AppCompatActivity {
                         next.putExtra(STRING_3, (String) null);
                         next.putExtra(INT_1, 7);
                         startService(next);
+                        break;
                     case 7:
+                        System.out.println("Arrived at case 7");
                         session2 = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), Converge.class);
                         next.putExtra(STRING_2, Session.combine(session, session2));
@@ -95,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case 8:
                         session = (Session) intent.getSerializableExtra("session");
+                        break;
                         // DONE
                     default:
                         System.err.println("Error code: " + code);
@@ -168,20 +177,25 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
                 case 1:
+                    System.out.println("Arrived at case 1");
                     spkText = data.getStringExtra(STRING_1);
                     next = new Intent(getApplicationContext(), CustomCamera.class);
                     startActivityForResult(next, 2);
+                    break;
                 case 2:
+                    System.out.println("Arrived at case 2");
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
                     next = new Intent(getApplicationContext(), Calibrate.class);
                     next.putExtra(INT_1, 3);
                     startService(next);
                     break;
                 case 4:
+                    System.out.println("Arrived at case 4");
                     photoPath2 = data.getStringExtra("photo-path");
                     next = new Intent(getApplicationContext(), Calibrate.class);
                     next.putExtra(INT_1, 5);
                     startService(next);
+                    break;
                 default:
                     System.err.println("Code not recognized.");
                     break;
