@@ -147,7 +147,7 @@ public class Converge extends IntentService {
         byte buf;
         float[] floats = new float[N];
         int ctr = 0;
-        ByteBuffer buffer = new ByteBuffer();
+        ByteArray buffer = new ByteArray();
         outer: while(true) {
             switch (buf = (byte) instr.read()) {
                 case '[':

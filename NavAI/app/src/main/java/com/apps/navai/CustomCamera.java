@@ -41,6 +41,10 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Queue;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+
 import static com.apps.navai.MainActivity.INT_1;
 import static com.apps.navai.MainActivity.SERVICE_RESPONSE;
 
@@ -57,8 +61,7 @@ public class CustomCamera extends AppCompatActivity {
     private int previewCtr = 100;
 
     private boolean configured;
-    private int captureCtr;
-    private int toneCtr;
+    private boolean notFirst;
     private int state;
 
     private Queue<Image> images;
@@ -85,12 +88,13 @@ public class CustomCamera extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             if(intent.getAction() != null && intent.getAction().equals(SERVICE_RESPONSE)) {
                 int code = intent.getIntExtra(INT_1, -1);
-                if (code == 1) {
+                if (code == 102) {
                     float[] rotMat = intent.getFloatArrayExtra("rot-mat");
                     System.out.println("Got the dir vector!");
                     Intent next = new Intent();
                     next.putExtra("photo-path", mCurrentPhotoPath);
                     next.putExtra("rot-mat", rotMat);
+                    finalClose();
                     CustomCamera.this.setResult(Activity.RESULT_OK, next);
                     CustomCamera.this.finish();
                 }
@@ -100,13 +104,6 @@ public class CustomCamera extends AppCompatActivity {
 
     private Handler handler;
     private HandlerThread backThread;
-
-    @Override
-    protected void onSaveInstanceState(Bundle bundle) {
-        super.onSaveInstanceState(bundle);
-        bundle.putInt("call-count", captureCtr);
-        bundle.putInt("tone-count", toneCtr);
-    }
 
     private void capturePicture() {
         try {
@@ -169,7 +166,18 @@ public class CustomCamera extends AppCompatActivity {
                                                @NonNull TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
                     if (result.getSequenceId() == QUEUE_SIZE) {
-                        (new ImageSaver()).run();
+                        RunnableFuture<Void> imageSaver =
+                                new FutureTask<>(new ImageSaver(), null);
+                        imageSaver.run();
+                        try {
+                            imageSaver.get();
+                        } catch (InterruptedException|ExecutionException e) {
+                            System.err.println(e.getMessage());
+                        }
+
+                        Intent next = new Intent(getApplicationContext(), Calibrate.class);
+                        next.putExtra(INT_1, 102);
+                        runOnUiThread(() -> startService(next));
                     }
                 }
     };
@@ -213,13 +221,11 @@ public class CustomCamera extends AppCompatActivity {
                         case STATE_PREVIEW:
                             --previewCtr;
                             if(previewCtr > 0) return;
-                            System.out.println("Case 0, previewCtr == 100.");
                             capturePicture();
                             break;
                         case STATE_WAITING_LOCK:
                             Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
                             if(afState == null) {
-                                System.out.println("Case 1, afstate == null.");
                                 capturePicture();
                             } else if (CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED == afState ||
                                     CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED == afState) {
@@ -227,7 +233,6 @@ public class CustomCamera extends AppCompatActivity {
                                 if (aeState == null ||
                                         aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) {
                                     state = STATE_TAKEN;
-                                    System.out.println("Case 1, picture state taken.");
                                     capturePicture();
                                 } else {
                                     System.out.println("About to precapture 240!");
@@ -260,6 +265,7 @@ public class CustomCamera extends AppCompatActivity {
             };
 
     private void unlockFocus() throws CameraAccessException {
+        System.out.println("EVERYTHING DONE START!");
         builder.set(CaptureRequest.CONTROL_AF_TRIGGER,
                 CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
         builder.removeTarget(surfaceHolder.getSurface());
@@ -268,6 +274,12 @@ public class CustomCamera extends AppCompatActivity {
         session.abortCaptures();
         session.close();
         cameraDevice.close();
+        System.out.println("EVERYTHING DONE END!");
+    }
+
+    private void finalClose() {
+        cameraDevice.close();
+        cameraManager = null;
     }
 
     private CameraDevice.StateCallback deviceCallback = new CameraDevice.StateCallback() {
@@ -368,15 +380,17 @@ public class CustomCamera extends AppCompatActivity {
                         System.err.println(e.getMessage());
                     }
                 }
+                System.out.println("WE DONE 360!");
+                handler = null;
+                try {
+                    unlockFocus();
+                } catch (CameraAccessException e) {
+                    System.err.println(e.getMessage());
+                }
+                mCurrentPhotoPath = file.getAbsolutePath();
+                System.out.println("DONE WITH RUNNABLE!");
+                backThread.quitSafely();
             }
-            System.out.println("WE DONE 360!");
-            /*
-            System.out.println("Got to intent!");
-            ++CustomCamera.this.captureCtr;
-            mCurrentPhotoPath = "PATH"; //file.getAbsolutePath();
-            Intent next = new Intent(getApplicationContext(), Calibrate.class);
-            next.putExtra(INT_1, 1);
-            startService(next); */
         }
     }
 
@@ -394,15 +408,35 @@ public class CustomCamera extends AppCompatActivity {
     }
 
     @Override
+    protected void onSaveInstanceState(Bundle b) {
+        super.onSaveInstanceState(b);
+        System.out.println("Reached save.");
+        b.putBoolean("not-first", notFirst);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle b) {
+        super.onRestoreInstanceState(b);
+        System.out.println("GOT TO RESTORE");
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
+        System.out.println("Bundle null: " + (savedInstanceState == null));
         super.onCreate(savedInstanceState);
-        images = new ArrayDeque<>(QUEUE_SIZE);
         setContentView(R.layout.activity_custom_camera);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        captureCtr = savedInstanceState == null ? 0 :
-                savedInstanceState.getInt("call-count", -1);
-        toneCtr = savedInstanceState == null ? 0 :
-                savedInstanceState.getInt("tone-count", -1);
+        notFirst = savedInstanceState != null && savedInstanceState.getBoolean("not-first");
+        System.out.println("notFirst: " + notFirst);
+
+        if(notFirst) {
+            return;
+        } else {
+            notFirst = true;
+        }
+
+
+        images = new ArrayDeque<>(QUEUE_SIZE);
 
         /*
         if(toneCtr == captureCtr && toneCtr == 0) {
@@ -451,13 +485,6 @@ public class CustomCamera extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        backThread.quitSafely();
-        handler = null;
-        try {
-            backThread.join();
-        } catch (InterruptedException e) {
-            System.err.println(e.getMessage());
-        }
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
     }
 

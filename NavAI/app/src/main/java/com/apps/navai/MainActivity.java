@@ -65,23 +65,35 @@ public class MainActivity extends AppCompatActivity {
                         first = false;
                         startActivityForResult(next, 1);
                         break;
-                    case 4:
+                    case 3:
+                        rotMat = intent.getFloatArrayExtra("rot-mat");
+                        next = new Intent(getApplicationContext(), CustomCamera.class);
+                        startActivityForResult(next, 4);
+                    case 5:
+                        rotMat2 = intent.getFloatArrayExtra("rot-mat");
+                        next = new Intent(getApplicationContext(), CallAPI.class);
+                        next.putExtra(STRING_1, mCurrentPhotoPath);
+                        next.putExtra(STRING_2, "READFILE");
+                        next.putExtra(STRING_3, (String) null);
+                        next.putExtra(INT_1, 6);
+                        startService(next);
+                    case 6:
                         session = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), CallAPI.class);
                         next.putExtra(STRING_1, photoPath2);
                         next.putExtra(STRING_2, "READFILE_TWO");
                         next.putExtra(STRING_3, (String) null);
-                        next.putExtra(INT_1, 5);
+                        next.putExtra(INT_1, 7);
                         startService(next);
-                    case 5:
+                    case 7:
                         session2 = (Session) intent.getSerializableExtra("session");
                         next = new Intent(getApplicationContext(), Converge.class);
                         next.putExtra(STRING_2, Session.combine(session, session2));
                         next.putExtra(STRING_1, spkText);
-                        next.putExtra(INT_1, 6);
+                        next.putExtra(INT_1, 8);
                         startService(next);
                         break;
-                    case 6:
+                    case 8:
                         session = (Session) intent.getSerializableExtra("session");
                         // DONE
                     default:
@@ -113,25 +125,21 @@ public class MainActivity extends AppCompatActivity {
             audioManager.setSpeakerphoneOn(true);
         }
 
-        /*
         mCurrentPhotoPath = st == null ? null : st.getString("photo-path");
         spkText = st == null ? null : st.getString("spk-text");
         first = st == null;
         rotMat = st == null ? null : st.getFloatArray("rot-mat-1");
         rotMat2 = st == null ? null : st.getFloatArray("rot-mat-2");
         photoPath2 = st == null ? null : st.getString("photo-path-2");
-        */
+
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
-        /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        if(first) startService(start); */
-        Intent start = new Intent(getApplicationContext(), CustomCamera.class);
-        startActivityForResult(start, 16);
+        if(first) startService(start);
     }
 
     @Override
@@ -165,20 +173,15 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(next, 2);
                 case 2:
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
-                    rotMat = data.getFloatArrayExtra("rot-mat");
-                    next = new Intent(getApplicationContext(), CustomCamera.class);
-                    startActivityForResult(next, 3);
-                    break;
-                case 3:
-                    photoPath2 = data.getStringExtra("photo-path");
-                    rotMat2 = data.getFloatArrayExtra("rot-mat");
-                    next = new Intent(getApplicationContext(), CallAPI.class);
-                    next.putExtra(STRING_1, mCurrentPhotoPath);
-                    next.putExtra(STRING_2, "READFILE");
-                    next.putExtra(STRING_3, (String) null);
-                    next.putExtra(INT_1, 4);
+                    next = new Intent(getApplicationContext(), Calibrate.class);
+                    next.putExtra(INT_1, 3);
                     startService(next);
                     break;
+                case 4:
+                    photoPath2 = data.getStringExtra("photo-path");
+                    next = new Intent(getApplicationContext(), Calibrate.class);
+                    next.putExtra(INT_1, 5);
+                    startService(next);
                 default:
                     System.err.println("Code not recognized.");
                     break;
