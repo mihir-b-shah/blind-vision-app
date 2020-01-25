@@ -55,5 +55,9 @@ public class ArduinoInterface extends IntentService implements DataStream.SpeedL
             X -= WALKER_DIAMETER*(1-COS_ROT);
         }
         Y += WALKER_DIAMETER*SIN_ROT;
+        Intent intent = new Intent(Navigate.XY_FILTER);
+        intent.putExtra("X", X);
+        intent.putExtra("Y", Y);
+        sendBroadcast(intent);
     }
 }

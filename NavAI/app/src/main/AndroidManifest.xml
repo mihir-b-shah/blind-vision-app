@@ -53,9 +53,6 @@
         <service
             android:name=".CallAPI"
             android:exported="false" />
-
-        <activity android:name=".ArduinoSensor" />
-
         <service
             android:name=".Calibrate"
             android:enabled="true"
