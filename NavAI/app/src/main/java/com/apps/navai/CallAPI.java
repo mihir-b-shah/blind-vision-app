@@ -182,9 +182,7 @@ public class CallAPI extends IntentService {
                 System.out.println(recText.getText());
                 convert();
 
-                // PROBLEM SPOT ok lets fix it then
-                session.genDescriptions(0);
-                session.genDescriptions(1);
+                session.genDescriptions(id);
 
                 if(writefile != null) {
                     dump(createFile(writefile));

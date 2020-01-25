@@ -8,6 +8,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.physicaloid.lib.Physicaloid;
 
+/**
+ * Interface to interact with the hardware.
+ */
 public class ArduinoSensor extends AppCompatActivity implements DataStream.SpeedListener {
 
     private Physicaloid phy;

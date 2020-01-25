@@ -5,21 +5,30 @@ import static java.lang.Math.*;
 public class DataStream {
     private double threshold;
 
-    private double noiseMean;
-    private double noiseMeanSQ;
-    private double noiseSD;
-    private int noiseCount;
+    private double noiseMean1;
+    private double noiseMeanSQ1;
+    private double noiseSD1;
+    private int noiseCount1;
+
+    private double noiseMean2;
+    private double noiseMeanSQ2;
+    private double noiseSD2;
+    private int noiseCount2;
+
     private boolean real;
-    private boolean filter;
 
     private final SpeedListener listener;
 
     private static final double RSQRT_2 = 1/sqrt(2);
     private static final double EPSILON = 1e-5;
 
-    private final DblStack stack;
+    private final DblStack stack1;
+    private final DblStack stack2;
     private final ByteArray queue;
-    private final CircularBuffer buffer;
+    private final CircularBuffer buffer1;
+    private final CircularBuffer buffer2;
+
+    private int recentStack;
 
     private class DblStack {
         private final double[] stack;
@@ -66,7 +75,7 @@ public class DataStream {
         }
 
         public boolean isNoise() {
-            return stack[2] == -1 ? false : abs(stack[4]-stack[2]) <= threshold;
+            return stack[2] != -1 && abs(stack[4] - stack[2]) <= threshold;
         }
 
         public boolean corner() {
@@ -93,10 +102,14 @@ public class DataStream {
     public DataStream(double thr, SpeedListener listener) {
         threshold = thr;
         this.listener = listener;
-        stack = new DblStack(5);
-        stack.push(0); stack.push(-1);
+        stack1 = new DblStack(5);
+        stack1.push(0); stack1.push(-1);
+        stack2 = new DblStack(5);
+        stack2.push(0); stack2.push(-1);
         queue = new ByteArray(3);
-        buffer = new CircularBuffer(64);
+        buffer1 = new CircularBuffer(64);
+        buffer2 = new CircularBuffer(64);
+        recentStack = 0;
     }
 
     // pade approximant from https://math.stackexchange.com/questions/1312418/
@@ -160,13 +173,22 @@ public class DataStream {
             if(res == -1) {
                 real = true;
                 noiseDone();
+            } else if((recentStack&2) == 0){
+                stack1.push(res);
+                if(real) {
+                    pushVal(0);
+                } else {
+                    pushTrain(0);
+                }
+                ++recentStack;
             } else {
-                stack.push(res);
-            }
-            if(real) {
-                pushVal();
-            } else {
-                pushTrain();
+                stack2.push(res);
+                if(real) {
+                    pushVal(1);
+                } else {
+                    pushTrain(1);
+                }
+                ++recentStack;
             }
         }
 
@@ -178,15 +200,25 @@ public class DataStream {
             if(res == -1) {
                 real = !real; // in case of second switch
                 noiseDone();
-            } else {
-                stack.push(res);
+            } else if((recentStack&2) == 0){
+                stack1.push(res);
                 if(real) {
-                    pushVal();
+                    pushVal(0);
                 } else {
-                    pushTrain();
+                    pushTrain(0);
                 }
+                ++recentStack;
+            } else {
+                stack2.push(res);
+                if(real) {
+                    pushVal(1);
+                } else {
+                    pushTrain(1);
+                }
+                ++recentStack;
             }
         }
+
         // queue the remainder
         int remainder = (queue.size()+size)%3;
         if(remainder != 0) {
@@ -196,7 +228,9 @@ public class DataStream {
         }
     }
 
-    private void pushTrain() {
+    private void pushTrain(int id) {
+        DblStack stack = id == 0 ? stack1: stack2;
+        CircularBuffer buffer = id == 0 ? buffer1: buffer2;
         if((stack.size()&1) == 0) {
             buffer.write(stack.top());
             double val = abs(stack.top()-
@@ -205,41 +239,60 @@ public class DataStream {
             stack.move(2, 0);
             stack.pop();
             stack.pop();
-            noiseMean += val;
-            noiseMeanSQ += val * val;
-            ++noiseCount;
+            if(id == 0) {
+                noiseMean1 += val;
+                noiseMeanSQ1 += val * val;
+                ++noiseCount1;
+            } else {
+                noiseMean2 += val;
+                noiseMeanSQ2 += val * val;
+                ++noiseCount2;
+            }
         }
     }
 
     private void noiseDone() {
-        filter = buffer.setDominantFreq();
-        if(filter) {
-            buffer.buildKernel();
-        }
-        noiseMean /= noiseCount-1;
-        noiseMeanSQ /= noiseCount-1;
-        noiseSD = sqrt(noiseMeanSQ-noiseMean*noiseMean);
+        buffer1.setDominantFreq();
+        buffer1.buildKernel();
+        buffer2.setDominantFreq();
+        buffer2.buildKernel();
+
+        noiseMean1 /= noiseCount1-1;
+        noiseMeanSQ1 /= noiseCount1-1;
+        noiseSD1 = sqrt(noiseMeanSQ1-noiseMean1*noiseMean1);
         threshold = genThreshold();
-        threshold *= noiseSD;
-        double temp = stack.at(1);
-        stack.move(0, 1);
-        stack.set(0, temp);
-        stack.set(2, -1); // set up for {mean, time, mean}
-        stack.setSize(3); // should be init off by 1
+        threshold *= noiseSD1;
+
+        noiseMean2 /= noiseCount2-1;
+        noiseMeanSQ2 /= noiseCount2-1;
+        noiseSD2 = sqrt(noiseMeanSQ2-noiseMean2*noiseMean2);
+        threshold *= noiseSD2;
+
+        double temp = stack1.at(1);
+        stack1.move(0, 1);
+        stack1.set(0, temp);
+        stack1.set(2, -1); // set up for {mean, time, mean}
+        stack1.setSize(3); // should be init off by 1
+        temp = stack2.at(1);
+        stack2.move(0, 1);
+        stack2.set(0, temp);
+        stack2.set(2, -1); // set up for {mean, time, mean}
+        stack2.setSize(3); // should be init off by 1
     }
 
-    private void pushVal() {
+    private void pushVal(int id) {
+        DblStack stack = id == 0 ? stack1: stack2;
+        CircularBuffer buffer = id == 0 ? buffer1: buffer2;
+
         boolean noise;
         if((stack.size() != stack.capacity())) {
             return;
         } else {
-            if(filter) {
-                stack.set(4, buffer.lsqFilter());
-            }
+            stack.set(4, buffer.lsqFilter());
             if(!(noise = stack.isNoise()) && stack.corner()) {
                 stack.move(2, 0);
                 stack.move(4, 2);
-                listener.speedChanged(PI, (stack.at(3)-stack.at(1))/1000d);
+                listener.speedChanged(id, (stack.at(3)-stack.at(1))/1000d);
                 stack.move(3, 1);
             } else if(!noise) {
                 stack.move(4, 2);
@@ -253,6 +306,6 @@ public class DataStream {
 
     @FunctionalInterface
     interface SpeedListener {
-        void speedChanged(double theta, double time);
+        void speedChanged(int id, double time);
     }
 }
