@@ -158,15 +158,21 @@ public class Session implements java.io.Serializable {
 
     public CharBuffer outform() {
         CharBuffer buffer = new CharBuffer(10);
-        buffer.appendln(filePathOne);
-        buffer.appendln(filePathTwo);
-        buffer.appendln(annotationsOne.length);
-        for(Annotation ant: annotationsOne) {
-            annotBuffer(ant, buffer);
+        if(filePathOne != null)
+            buffer.appendln(filePathOne);
+        if(filePathTwo != null)
+            buffer.appendln(filePathTwo);
+        if(annotationsOne != null) {
+            buffer.appendln(annotationsOne.length);
+            for (Annotation ant : annotationsOne) {
+                annotBuffer(ant, buffer);
+            }
         }
-        buffer.appendln(annotationsTwo.length);
-        for(Annotation ant: annotationsTwo) {
-            annotBuffer(ant, buffer);
+        if(annotationsTwo != null) {
+            buffer.appendln(annotationsTwo.length);
+            for (Annotation ant : annotationsTwo) {
+                annotBuffer(ant, buffer);
+            }
         }
         return buffer;
     }

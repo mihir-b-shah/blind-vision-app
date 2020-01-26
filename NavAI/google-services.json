@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "285327152179",
+    "firebase_url": "https://navai-5136f.firebaseio.com",
+    "project_id": "navai-5136f",
+    "storage_bucket": "navai-5136f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:285327152179:android:475f4bf518b0d85f20ff46",
+        "android_client_info": {
+          "package_name": "com.apps.navai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "285327152179-iecsia4autpjpsghthdh8et22c7p55qn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJ5Cbt_Jn4I8fNmERBacdgqqBlsiz_fnI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "285327152179-iecsia4autpjpsghthdh8et22c7p55qn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

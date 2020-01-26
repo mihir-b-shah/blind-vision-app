@@ -39,7 +39,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".Navigate"></activity>
+        <activity android:name=".CallGAPI"></activity>
+        <activity android:name=".Navigate" />
 
         <service
             android:name=".ArduinoInterface"

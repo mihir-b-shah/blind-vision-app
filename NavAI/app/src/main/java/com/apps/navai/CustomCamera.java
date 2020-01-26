@@ -16,6 +16,7 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
+import android.util.Size;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -36,6 +38,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -463,8 +466,14 @@ public class CustomCamera extends AppCompatActivity {
 
     private void openCamera() {
         try {
+            CameraCharacteristics characteristics =
+                    cameraManager.getCameraCharacteristics(getRearCameraId());
+            StreamConfigurationMap map = characteristics.get(
+                    CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            Size opt = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
+                    (o1, o2) -> o1.getHeight()*o1.getWidth()-o2.getHeight()*o2.getWidth());
             imageReader = ImageReader.newInstance(
-                    CAMERA_WIDTH, CAMERA_HEIGHT, ImageFormat.JPEG, QUEUE_SIZE+1);
+                    opt.getWidth(), opt.getHeight(), ImageFormat.JPEG, QUEUE_SIZE+1);
             imageReader.setOnImageAvailableListener(reader -> {
                 Image img = reader.acquireLatestImage();
                 if(img == null) {
