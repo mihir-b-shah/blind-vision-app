@@ -12,13 +12,17 @@ import android.widget.ImageView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.ml.vision.FirebaseVision;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetector;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetectorOptions;
+import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptions;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 
 public class OCRDebug extends AppCompatActivity {
+
+    private boolean run = true;
 
     public Bitmap filter(Bitmap image) {
         Bitmap newImage = Bitmap.createBitmap(image.getWidth(),
@@ -41,34 +45,44 @@ public class OCRDebug extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (run) {
+            run = false;
+        } else {
+            return;
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_call_gapi);
         ImageView imgView = findViewById(R.id.iview);
 
         String parent = getExternalFilesDir(Environment.DIRECTORY_PICTURES).getAbsolutePath();
-        parent += "/CAPTURE81529622.jpg";
+        parent += "/CAPTURE680603899.jpg";
         Bitmap bitmap = BitmapFactory.decodeFile(parent);
         bitmap = filter(bitmap);
         bitmap = Bitmap.createScaledBitmap(bitmap, 1920, 1080, true);
+        System.out.println(bitmap.getWidth() + " " + bitmap.getHeight());
         final FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
         imgView.setImageBitmap(image.getBitmap());
         System.out.println(image.getBitmap().getByteCount());
 
+        /*
         FirebaseVisionObjectDetectorOptions options =
                 new FirebaseVisionObjectDetectorOptions.Builder()
                         .setDetectorMode(
                                 FirebaseVisionObjectDetectorOptions.SINGLE_IMAGE_MODE)
                         .enableMultipleObjects()
-                        .build();
-        FirebaseVisionObjectDetector objectDetector =
-                FirebaseVision.getInstance().getOnDeviceObjectDetector(options);
-        objectDetector.processImage(image).addOnSuccessListener(result->{
-            System.out.println(result.toString());
-            FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
-            detector.processImage(image).addOnSuccessListener(res->{
-                System.out.println(res.getText());
-            });
-        });
+                        .build(); */
 
+        FirebaseVisionCloudTextRecognizerOptions options =
+                new FirebaseVisionCloudTextRecognizerOptions.Builder()
+                .setModelType(FirebaseVisionCloudTextRecognizerOptions.SPARSE_MODEL)
+                .build();
+        FirebaseVisionTextRecognizer detector =
+                FirebaseVision.getInstance().getCloudTextRecognizer(options);
+        detector.processImage(image).addOnSuccessListener(res->{
+            System.out.println(res.getText());
+        }).addOnFailureListener(res->{
+            System.err.println("NOOOOO!");
+        });
     }
 }

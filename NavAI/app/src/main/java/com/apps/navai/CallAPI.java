@@ -20,6 +20,7 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObject;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetector;
 import com.google.firebase.ml.vision.objects.FirebaseVisionObjectDetectorOptions;
+import com.google.firebase.ml.vision.text.FirebaseVisionCloudTextRecognizerOptions;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 
@@ -174,9 +175,12 @@ public class CallAPI extends IntentService {
 
     private void textRecognize(FirebaseVisionImage image) {
 
+        FirebaseVisionCloudTextRecognizerOptions options =
+                new FirebaseVisionCloudTextRecognizerOptions.Builder()
+                        .setModelType(FirebaseVisionCloudTextRecognizerOptions.SPARSE_MODEL)
+                        .build();
         detector = FirebaseVision.getInstance()
-                .getCloudTextRecognizer();
-
+                .getCloudTextRecognizer(options);
         Task<FirebaseVisionText> result =
             detector.processImage(image)
                 .addOnSuccessListener(firebaseVisionText -> {
@@ -200,16 +204,15 @@ public class CallAPI extends IntentService {
                         e -> System.err.println("Error encountered in text send."));
     }
 
-    /*
     @Override
     public void onDestroy() {
         try {
-            objectDetector.close();
-            detector.close();
+            if(objectDetector != null) objectDetector.close();
+            if(detector != null) detector.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-    } */
+    }
 
     public void dump(String path) {
         if(callNum == 0) {

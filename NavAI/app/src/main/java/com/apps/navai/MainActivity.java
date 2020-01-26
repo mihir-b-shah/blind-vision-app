@@ -150,6 +150,10 @@ public class MainActivity extends AppCompatActivity {
                 "are you looking for?");
         start.putExtra(INT_1, 0);
         if(first) startService(start);
+
+        /*
+        Intent start = new Intent(getApplicationContext(), OCRDebug.class);
+        startActivityForResult(start, 49); */
     }
 
     @Override
