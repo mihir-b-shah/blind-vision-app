@@ -43,7 +43,6 @@ public class MainActivity extends AppCompatActivity {
 
     private Session session;
     private Session session2;
-    private float initDir;
     private String spkText;
     private String mCurrentPhotoPath;
     private String photoPath2;
@@ -80,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
                         next.putExtra(STRING_2, "READFILE");
                         next.putExtra(STRING_3, (String) null);
                         next.putExtra(INT_1, 6);
+                        next.putExtra(INT_2, 0);
                         startService(next);
                         break;
                     case 6:
@@ -90,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
                         next.putExtra(STRING_2, "READFILE_TWO");
                         next.putExtra(STRING_3, (String) null);
                         next.putExtra(INT_1, 7);
+                        next.putExtra(INT_2, 1);
                         startService(next);
                         break;
                     case 7:
@@ -123,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle st) {
         super.onCreate(st);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_main);
 
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);

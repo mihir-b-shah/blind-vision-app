@@ -4,6 +4,7 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.os.Environment;
 import android.renderscript.Allocation;
@@ -49,6 +50,9 @@ public class CallAPI extends IntentService {
 
     private String writefile;
     private static final List<Bitmap> photoMap;
+
+    private FirebaseVisionObjectDetector objectDetector;
+    private FirebaseVisionTextRecognizer detector;
 
     static {
         photoMap = new ArrayList<>(2);
@@ -132,7 +136,7 @@ public class CallAPI extends IntentService {
                 rs, Element.U8_4(rs));
         convolution.setInput(input);
 
-        final float[] kernel = {-1f,-1f,-1f,-1f,9f,-1f,-1f,-1f,-1f};
+        final float[] kernel = {-1f, -1f, -1f, -1f, 9f, -1f, -1f, -1f, -1f};
         convolution.setCoefficients(kernel);
         convolution.forEach(output);
         output.copyTo(newImage);
@@ -141,14 +145,10 @@ public class CallAPI extends IntentService {
     }
 
     private void objectRecognize() {
-        /* params[0] = absolute path of the photo */
-        BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
-        bitmapOptions.inJustDecodeBounds = false;
-        bitmapOptions.inMutable = false;
-        bitmapOptions.outWidth = CustomCamera.CAMERA_WIDTH;
-        bitmapOptions.outHeight = CustomCamera.CAMERA_HEIGHT;
-        Bitmap bitmap = BitmapFactory.decodeFile(imagepath, bitmapOptions);
+        Bitmap bitmap = BitmapFactory.decodeFile(imagepath);
         bitmap = filter(bitmap);
+        bitmap = Bitmap.createScaledBitmap(bitmap, CustomCamera.CAMERA_WIDTH,
+                CustomCamera.CAMERA_HEIGHT, true);
         photoMap.add(bitmap);
 
         FirebaseVisionObjectDetectorOptions options =
@@ -158,13 +158,14 @@ public class CallAPI extends IntentService {
                     .enableMultipleObjects()
                     .build();
 
-        final FirebaseVisionObjectDetector objectDetector =
+        objectDetector =
                 FirebaseVision.getInstance().getOnDeviceObjectDetector(options);
         final FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
         objectDetector.processImage(image)
             .addOnSuccessListener(
                     detectedObjects -> {
                         recObjects = detectedObjects;
+                        System.out.println("SIZE: " + detectedObjects.size());
                         textRecognize(image);
                     })
             .addOnFailureListener(
@@ -172,17 +173,18 @@ public class CallAPI extends IntentService {
     }
 
     private void textRecognize(FirebaseVisionImage image) {
-        FirebaseVisionTextRecognizer detector = FirebaseVision.getInstance()
+
+        detector = FirebaseVision.getInstance()
                 .getCloudTextRecognizer();
 
         Task<FirebaseVisionText> result =
             detector.processImage(image)
                 .addOnSuccessListener(firebaseVisionText -> {
                 recText = firebaseVisionText;
-                System.out.println(recText.getText());
+                System.out.println("TEXT: " + recText.getText());
                 convert();
 
-                session.genDescriptions(id);
+                session.genDescriptions(callNum);
 
                 if(writefile != null) {
                     dump(createFile(writefile));
@@ -194,11 +196,20 @@ public class CallAPI extends IntentService {
                             .sendBroadcast(out);
                     CallAPI.this.stopSelf();
                 }
-                })
-                .addOnFailureListener(
-                        // Getting exception here
+                }).addOnFailureListener(
                         e -> System.err.println("Error encountered in text send."));
     }
+
+    /*
+    @Override
+    public void onDestroy() {
+        try {
+            objectDetector.close();
+            detector.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    } */
 
     public void dump(String path) {
         if(callNum == 0) {

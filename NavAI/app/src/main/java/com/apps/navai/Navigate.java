@@ -12,6 +12,8 @@ import android.os.Bundle;
 public class Navigate extends AppCompatActivity {
 
     public static final String XY_FILTER;
+    private int X;
+    private int Y;
 
     static {
         XY_FILTER = "string1&4349039";
