@@ -39,11 +39,10 @@ public class StringUtils {
 
         for(int i = 1; i<1+word2.length(); ++i) {
             for(int j = 1; j<1+word1.length(); ++j) {
-                int val = word2.charAt(i-1) == word1.charAt(j-1) ? 0 : 1;
-                if(val == 0) {
+                if(word2.charAt(i-1) == word1.charAt(j-1)) {
                     dp[1][j] = dp[0][j-1];
                 } else {
-                    dp[1][j] = val + Math.min(dp[0][j-1], Math.min(dp[0][j], dp[1][j-1]));
+                    dp[1][j] = 1 + Math.min(dp[0][j-1], Math.min(dp[0][j], dp[1][j-1]));
                 }
             }
 
