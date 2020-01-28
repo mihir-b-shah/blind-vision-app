@@ -26,6 +26,71 @@ public class StringUtils {
         return spellCheck.output;
     }
 
+    private static final int DELETE_MASK = 20;
+    private static final int INSERT_MASK = 10;
+    private static final int RIGHT_MASK = 0x3ff;
+
+    private static final int INSERT_ONE = 0x400;
+    private static final int DELETE_ONE = 0x10000;
+
+    private static int collapse(int one) {
+        return ((one >>> DELETE_MASK) + (one >>> INSERT_MASK) + one) & RIGHT_MASK;
+    }
+
+    /**
+     * Utility min function.
+     *
+     * @param one a replace arg
+     * @param two an insert arg
+     * @param three a delete arg
+     * @return formatted minimum.
+     */
+    private static int packMin(int one, int two, int three) {
+        int v1 = collapse(one); int v2 = collapse(two); int v3 = collapse(three);
+
+        if(v1 > v2) {
+            if(v1 > v3) {
+                return one+1;
+            } else {
+                return two+INSERT_ONE;
+            }
+        } else {
+            if(v1 > v3) {
+                return three+DELETE_ONE;
+            } else {
+                return two+INSERT_ONE;
+            }
+        }
+    }
+
+    private static int newEditDistance(String word1, String word2) {
+        // space saving optimization
+        if(word1.length() > word2.length()) {
+            String temp = word2;
+            word2 = word1;
+            word1 = temp;
+        }
+        int[][] dp = new int[2][1+word1.length()];
+        for(int i = 0; i<1+word1.length(); ++i)
+            dp[0][i] = i << DELETE_MASK;
+
+        for(int i = 1; i<1+word2.length(); ++i) {
+            for(int j = 1; j<1+word1.length(); ++j) {
+                if(word2.charAt(i-1) == word1.charAt(j-1)) {
+                    dp[1][j] = dp[0][j-1];
+                } else {
+                    dp[1][j] = packMin(dp[0][j-1], dp[0][j], dp[1][j-1]);
+                }
+            }
+
+            dp[0] = dp[1];
+            dp[1] = new int[1+word1.length()];
+            dp[1][0] = i << INSERT_MASK;
+        }
+
+        return collapse(dp[0][word1.length()]);
+    }
+
     private static int editDistance(String word1, String word2) {
         // space saving optimization
         if(word1.length() > word2.length()) {
