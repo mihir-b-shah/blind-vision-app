@@ -60,7 +60,7 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         rect = p.getBoundingBox();
         tag = 't';
         conf = p.getConfidence() != null ? p.getConfidence() : -1;
-        descr = p.getText();
+        descr = p.getText().replaceAll("\\s+", " ");
     }
 
     // default constructor
@@ -94,6 +94,10 @@ public class Annotation implements Serializable,Comparable<Annotation> {
 
     public float getConf() {
         return conf*match;
+    }
+
+    public void updateDescr(String s) {
+        descr = s;
     }
 
     @Override

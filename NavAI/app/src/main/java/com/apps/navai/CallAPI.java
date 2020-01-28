@@ -189,6 +189,7 @@ public class CallAPI extends IntentService {
                 convert();
 
                 session.genDescriptions(callNum);
+                session.correctOCR(this, callNum);
 
                 if(writefile != null) {
                     dump(createFile(writefile));

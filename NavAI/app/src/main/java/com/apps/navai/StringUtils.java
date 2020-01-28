@@ -14,18 +14,16 @@ import java.util.function.IntFunction;
 public class StringUtils {
 
     private static final int MAX_SUGGESTIONS = 7;
-    
-    private static final int SPACE_MASK = 24;
-    private static final int DELETE_MASK = 16;
-    private static final int INSERT_MASK = 8;
-    private static final int RIGHT_MASK = 0xff;
 
-    private static final int SPACE_ONE = 0x1000000;
-    private static final int INSERT_ONE = 0x100;
-    private static final int DELETE_ONE = 0x10000;
+    private static final int DELETE_MASK = 20;
+    private static final int INSERT_MASK = 10;
+    private static final int RIGHT_MASK = 0x3ff;
+
+    private static final int INSERT_ONE = 0x400;
+    private static final int DELETE_ONE = 0x100000;
 
     public static String[] correct(Context context, String input) {
-        SpellCheck spellCheck = new SpellCheck(context, input.split("\\s"));
+        SpellCheck spellCheck = new SpellCheck(context, input.split("\t"));
         while(!spellCheck.outputReady) {
             try {
                 Thread.sleep(10);
@@ -58,20 +56,18 @@ public class StringUtils {
      * @param three a delete arg
      * @return formatted minimum.
      */
-    private static int packMin(int one, int two, int three, char c1, char c2) {
+    private static int packMin(int one, int two, int three, int distOne, int distTwo) {
         int v1 = collapse(one); int v2 = collapse(two); int v3 = collapse(three);
-        boolean space = c1 == ' ' || c2 == ' ';
 
-        int res;
         if(v1 > v2) {
             if(v1 > v3) {
                 return one+1;
             } else {
-                return two+INSERT_ONE+(space?SPACE_ONE:0);
+                return two+INSERT_ONE*(distOne+distTwo);
             }
         } else {
             if(v1 > v3) {
-                return three+DELETE_ONE+(space?SPACE_ONE:0);
+                return three+DELETE_ONE*(distOne+distTwo);
             } else {
                 return one+1;
             }
@@ -94,8 +90,9 @@ public class StringUtils {
                 if(word2.charAt(i-1) == word1.charAt(j-1)) {
                     dp[1][j] = dp[0][j-1];
                 } else {
-                    dp[1][j] = packMin(dp[0][j-1], dp[0][j], dp[1][j-1], 
-                                word2.charAt(i-1), word1.charAt(j-1));
+                    dp[1][j] = packMin(dp[0][j-1], dp[0][j], dp[1][j-1],
+                            Math.min(j-1, word1.length()-j),
+                            Math.min(i-1, word2.length()-i));
                 }
             }
 
@@ -106,8 +103,7 @@ public class StringUtils {
 
         int val = dp[0][word1.length()];
         return (val & RIGHT_MASK)+(((val >>> INSERT_MASK) & RIGHT_MASK)
-                +((val >>> DELETE_MASK) & RIGHT_MASK))*1.5
-                -((val >>> SPACE_MASK) & RIGHT_MASK);
+                +((val >>> DELETE_MASK) & RIGHT_MASK))*1.5;
     }
 
     private static int editDistance(String word1, String word2) {
@@ -175,11 +171,11 @@ public class StringUtils {
                 curr = input[i];
 
                 String opt = null;
-                int minDist = 1_000_000_000;
-                int currDist;
+                double minDist = 1_000_000_000;
+                double currDist;
 
                 for(int j = 0; j<info.getSuggestionsCount(); ++j) {
-                    if(minDist > (currDist = editDistance(curr, info.getSuggestionAt(j)))) {
+                    if(minDist > (currDist = weightedEditDistance(curr, info.getSuggestionAt(j)))) {
                         minDist = currDist;
                         opt = info.getSuggestionAt(j);
                     }

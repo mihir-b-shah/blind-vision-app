@@ -1,5 +1,6 @@
 package com.apps.navai;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 
@@ -72,6 +73,19 @@ public class Session implements java.io.Serializable {
         }
         bitmap.recycle();
         System.out.println("Recycled bitmaps!");
+    }
+
+    public void correctOCR(Context context, int callNum) {
+        StringBuilder input = new StringBuilder();
+        Annotation[] annotations = callNum == 0 ? annotationsOne : annotationsTwo;
+        for(Annotation annot: annotations) {
+            input.append(annot.getDescription());
+            input.append('\t');
+        }
+        String[] output = StringUtils.correct(context, input.toString());
+        for(int i = 0; i<output.length; ++i) {
+            annotations[i].updateDescr(output[i]);
+        }
     }
 
     public void setAnnotationsOne(Annotation[] a) {
