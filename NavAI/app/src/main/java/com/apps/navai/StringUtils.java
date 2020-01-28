@@ -9,10 +9,20 @@ import android.view.textservice.TextServicesManager;
 
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.function.IntFunction;
 
 public class StringUtils {
 
-    private static final int MAX_SUGGESTIONS = 4;
+    private static final int MAX_SUGGESTIONS = 7;
+    
+    private static final int SPACE_MASK = 24;
+    private static final int DELETE_MASK = 16;
+    private static final int INSERT_MASK = 8;
+    private static final int RIGHT_MASK = 0xff;
+
+    private static final int SPACE_ONE = 0x1000000;
+    private static final int INSERT_ONE = 0x100;
+    private static final int DELETE_ONE = 0x10000;
 
     public static String[] correct(Context context, String input) {
         SpellCheck spellCheck = new SpellCheck(context, input.split("\\s"));
@@ -26,15 +36,18 @@ public class StringUtils {
         return spellCheck.output;
     }
 
-    private static final int DELETE_MASK = 20;
-    private static final int INSERT_MASK = 10;
-    private static final int RIGHT_MASK = 0x3ff;
-
-    private static final int INSERT_ONE = 0x400;
-    private static final int DELETE_ONE = 0x10000;
-
     private static int collapse(int one) {
         return ((one >>> DELETE_MASK) + (one >>> INSERT_MASK) + one) & RIGHT_MASK;
+    }
+    
+    private static void print2DArray(int[][] array, IntFunction func) {
+        for(int[] a: array) {
+            for(int b: a) {
+                System.out.printf("%3d", func.apply(b));
+            }
+            System.out.println();
+        }
+        System.out.println();
     }
 
     /**
@@ -45,26 +58,27 @@ public class StringUtils {
      * @param three a delete arg
      * @return formatted minimum.
      */
-    private static int packMin(int one, int two, int three) {
+    private static int packMin(int one, int two, int three, char c1, char c2) {
         int v1 = collapse(one); int v2 = collapse(two); int v3 = collapse(three);
+        boolean space = c1 == ' ' || c2 == ' ';
 
+        int res;
         if(v1 > v2) {
             if(v1 > v3) {
                 return one+1;
             } else {
-                return two+INSERT_ONE;
+                return two+INSERT_ONE+(space?SPACE_ONE:0);
             }
         } else {
             if(v1 > v3) {
-                return three+DELETE_ONE;
+                return three+DELETE_ONE+(space?SPACE_ONE:0);
             } else {
-                return two+INSERT_ONE;
+                return one+1;
             }
         }
     }
 
-    private static int newEditDistance(String word1, String word2) {
-        // space saving optimization
+    private static double weightedEditDistance(String word1, String word2) {
         if(word1.length() > word2.length()) {
             String temp = word2;
             word2 = word1;
@@ -75,11 +89,13 @@ public class StringUtils {
             dp[0][i] = i << DELETE_MASK;
 
         for(int i = 1; i<1+word2.length(); ++i) {
+            //print2DArray(dp, StringUtils::collapse);
             for(int j = 1; j<1+word1.length(); ++j) {
                 if(word2.charAt(i-1) == word1.charAt(j-1)) {
                     dp[1][j] = dp[0][j-1];
                 } else {
-                    dp[1][j] = packMin(dp[0][j-1], dp[0][j], dp[1][j-1]);
+                    dp[1][j] = packMin(dp[0][j-1], dp[0][j], dp[1][j-1], 
+                                word2.charAt(i-1), word1.charAt(j-1));
                 }
             }
 
@@ -88,7 +104,10 @@ public class StringUtils {
             dp[1][0] = i << INSERT_MASK;
         }
 
-        return collapse(dp[0][word1.length()]);
+        int val = dp[0][word1.length()];
+        return (val & RIGHT_MASK)+(((val >>> INSERT_MASK) & RIGHT_MASK)
+                +((val >>> DELETE_MASK) & RIGHT_MASK))*1.5
+                -((val >>> SPACE_MASK) & RIGHT_MASK);
     }
 
     private static int editDistance(String word1, String word2) {
@@ -116,7 +135,7 @@ public class StringUtils {
             dp[1][0] = i;
         }
 
-        return dp[0][word1.length()]-Math.abs(word1.length()-word2.length());
+        return dp[0][word1.length()];
     }
 
     private static class SpellCheck implements SpellCheckerSession.SpellCheckerSessionListener {
