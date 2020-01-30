@@ -107,11 +107,11 @@ public class PhotoUtils {
      * @return get angle of elevation
      */
     private static double getVerticalAngle(double normVertical) {
-        return atan(normVertical*tan(2*atan(size.getHeight()/focLength)));
+        return atan(2*normVertical*tan(2*atan(size.getHeight()/focLength)));
     }
 
     private static double getHorizontalAngle(double normHorizontal) {
-        return atan(normHorizontal*tan(2*atan(size.getWidth()/focLength)));
+        return atan(2*normHorizontal*tan(2*atan(size.getWidth()/focLength)));
     }
 
     private static void correct(Annotation annot) {
