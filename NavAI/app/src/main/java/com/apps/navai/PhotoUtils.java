@@ -76,9 +76,9 @@ public class PhotoUtils {
     private static PolarVector calcTrajectory(Annotation a1, Annotation a2) {
         final int HALF = CustomCamera.CAMERA_HEIGHT >>> 1;
         final DirVector v1 = getLocationVector(0,
-                a1.getRect().exactCenterY()/HALF - 0.5);
+                0.5 - a1.getRect().exactCenterY()/HALF);
         final DirVector v2 = getLocationVector(1,
-                a2.getRect().exactCenterY()/HALF - 0.5);
+                0.5 - a2.getRect().exactCenterY()/HALF);
 
         final double mgn1 = DirVector.dot(v1, v1); final double mgn2 = DirVector.dot(v2, v2);
         final double dot = DirVector.dot(v1, v2);
