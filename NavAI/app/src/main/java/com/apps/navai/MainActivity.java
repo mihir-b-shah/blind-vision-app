@@ -14,6 +14,9 @@ import android.os.Bundle;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /*
 1. Should manage the main sequence UI.
  */
@@ -145,15 +148,16 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
+        /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
         if(first) startService(start);
+        */
 
-        /*
-        Intent start = new Intent(getApplicationContext(), OCRDebug.class);
-        startActivityForResult(start, 49); */
+        String[] output = StringUtils.correct(this, "hello\tphysica\thackr");
+        System.out.println(Arrays.toString(output));
     }
 
     @Override

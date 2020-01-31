@@ -12,7 +12,8 @@ import static java.lang.Math.*;
 public class PhotoUtils {
     private static CameraManager manager;
     private static float[][] rotMatrices;
-    private static double[] cacheAngles;
+    private static double[] cacheVertAngles;
+    private static double[] cacheHorAngles;
 
     /**
      * In meters, the length of the arm on the stick.
@@ -25,7 +26,8 @@ public class PhotoUtils {
 
     static {
         rotMatrices = new float[2][];
-        cacheAngles = new double[2];
+        cacheVertAngles = new double[2];
+        cacheHorAngles = new double[2];
     }
 
     private static void setup() {
@@ -60,6 +62,8 @@ public class PhotoUtils {
         static double dot(DirVector v1, DirVector v2) {
             return v1.x*v2.x+v1.y*v2.y+v1.z*v2.z;
         }
+        double zCosine() {return acos(z/sqrt(x*x+y*y+z*z));}
+        double horizAngle() {return x/sqrt(x*x+y*y+z*z);}
     }
 
     public static PolarVector calcTrajectory(CameraManager manager, Annotation a1, Annotation a2,
@@ -75,29 +79,35 @@ public class PhotoUtils {
 
     private static PolarVector calcTrajectory(Annotation a1, Annotation a2) {
         final DirVector v1 = getLocationVector(0,
-                0.5 - a1.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT);
+                0.5 - a1.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
+                -0.5 + a1.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH);
         final DirVector v2 = getLocationVector(1,
-                0.5 - a2.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT);
+                0.5 - a2.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
+                -0.5 + a1.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH);
 
-        final double mgn1 = DirVector.dot(v1, v1); final double mgn2 = DirVector.dot(v2, v2);
-        final double dot = DirVector.dot(v1, v2);
+        final DirVector pv1 = getLocationVector(0, 0, 0);
+        final DirVector pv2 = getLocationVector(1, 0, 0);
 
-        final double dx = -PIVOT_RADIUS*sqrt(mgn1*mgn2-dot*dot)/dot;
-        final double dy = PIVOT_RADIUS*(1-dot/sqrt(mgn1*mgn2));
+        double ang1 = v1.zCosine(); double ang2 = v2.zCosine();
 
-        return new PolarVector(dx*sin(cacheAngles[1])+dy*cos(cacheAngles[1])/
-                sin(cacheAngles[0]-cacheAngles[1]), getHorizontalAngle(
-                        a1.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH - 0.5));
+        double beta = Math.acos(DirVector.dot(pv1, pv2)/
+                (DirVector.dot(pv1, pv1)*DirVector.dot(pv2, pv2)));
+        double dist = (PIVOT_RADIUS*(cos(beta)-1)-PIVOT_RADIUS*sin(beta)/tan(ang2))/
+                        (cos(ang1)-sin(ang1)/tan(ang2));
+        return new PolarVector(dist*cos(ang1), v1.horizAngle());
     }
 
-    private static DirVector getLocationVector(int index, double normVertical) {
+    private static DirVector getLocationVector(int index, double normVertical, double normHorizontal) {
         double theta = getVerticalAngle(normVertical);
-        cacheAngles[index] = theta;
+        cacheVertAngles[index] = theta;
+        double alpha = getHorizontalAngle(normHorizontal);
+        cacheHorAngles[index] = alpha;
         float[] rotMatrix = rotMatrices[index];
-        double cosTheta = cos(theta); double sinTheta = sin(theta);
-        return new DirVector(rotMatrix[1]*cosTheta-rotMatrix[2]*sinTheta,
-                             rotMatrix[4]*cosTheta-rotMatrix[5]*sinTheta,
-                             rotMatrix[7]*cosTheta-rotMatrix[8]*sinTheta);
+        double x = sin(theta); double y = -tan(alpha); double z = -cos(theta);
+
+        return new DirVector(x*rotMatrix[0]+y*rotMatrix[3]+z*rotMatrix[6],
+                             x*rotMatrix[1]+y*rotMatrix[4]+z*rotMatrix[7],
+                             x*rotMatrix[2]+y*rotMatrix[5]+z*rotMatrix[8]);
     }
 
     /**

@@ -81,6 +81,7 @@
             android:value="ocr,label" />
 
         <activity android:name=".MainActivity">
+            android:permission="android.permission.BIND_TEXT_SERVICE"
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

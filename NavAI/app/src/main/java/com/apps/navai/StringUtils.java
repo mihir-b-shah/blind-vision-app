@@ -149,7 +149,8 @@ public class StringUtils {
                     this, true);
 
             TextInfo[] ti = Arrays.stream(input).map(TextInfo::new).toArray(TextInfo[]::new);
-            scs.getSentenceSuggestions(ti,MAX_SUGGESTIONS);
+            TextInfo[] inp = {new TextInfo("physica")};
+            scs.getSentenceSuggestions(inp,MAX_SUGGESTIONS);
         }
 
         private void free() {
@@ -163,6 +164,7 @@ public class StringUtils {
 
         @Override
         public void onGetSentenceSuggestions(SentenceSuggestionsInfo[] sentenceSuggestionsInfos) {
+            System.out.println("Got something!");
             output = new String[sentenceSuggestionsInfos.length];
             SentenceSuggestionsInfo obj = sentenceSuggestionsInfos[0];
             String curr;
