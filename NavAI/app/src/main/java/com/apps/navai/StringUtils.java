@@ -78,11 +78,6 @@ public class StringUtils {
     }
 
     private static double weightedEditDistance(String word1, String word2) {
-        if(word1.length() > word2.length()) {
-            String temp = word2;
-            word2 = word1;
-            word1 = temp;
-        }
         int[][] dp = new int[2][1+word1.length()];
         for(int i = 0; i<1+word1.length(); ++i)
             dp[0][i] = i << DELETE_MASK;
