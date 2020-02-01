@@ -34,8 +34,9 @@ public class StringUtils {
         return spellCheck.output;
     }
 
-    private static int collapse(int one) {
-        return ((one >>> DELETE_MASK) + (one >>> INSERT_MASK) + one) & RIGHT_MASK;
+    private static double collapse(int one) {
+        return (((one >>> DELETE_MASK) + (one >>> INSERT_MASK)) & RIGHT_MASK)*1.5
+                +(one & RIGHT_MASK);
     }
     
     private static void print2DArray(int[][] array, IntFunction func) {
@@ -56,18 +57,20 @@ public class StringUtils {
      * @param three a delete arg
      * @return formatted minimum.
      */
-    private static int packMin(int one, int two, int three, int distOne, int distTwo) {
-        int v1 = collapse(one); int v2 = collapse(two); int v3 = collapse(three);
+    private static int packMin(int one, int two, int three, double dist) {
+        double v1 = collapse(one); double v2 = collapse(two); double v3 = collapse(three);
+        int bias = (int) (4*dist+1); // constrain on range 1,3.
+        if ((bias < 1 || bias > 3)) throw new AssertionError();
 
         if(v1 > v2) {
             if(v1 > v3) {
                 return one+1;
             } else {
-                return two+INSERT_ONE*(distOne+distTwo);
+                return two+INSERT_ONE*bias;
             }
         } else {
             if(v1 > v3) {
-                return three+DELETE_ONE*(distOne+distTwo);
+                return three+DELETE_ONE*bias;
             } else {
                 return one+1;
             }
@@ -91,8 +94,7 @@ public class StringUtils {
                     dp[1][j] = dp[0][j-1];
                 } else {
                     dp[1][j] = packMin(dp[0][j-1], dp[0][j], dp[1][j-1],
-                            Math.min(j-1, word1.length()-j),
-                            Math.min(i-1, word2.length()-i));
+                            Math.min(j-1, word1.length()-j)/word1.length());
                 }
             }
 
