@@ -154,10 +154,12 @@ public class MainActivity extends AppCompatActivity {
                 "are you looking for?");
         start.putExtra(INT_1, 0);
         if(first) startService(start);
-        */
+         */
 
-        String[] output = StringUtils.correct(this, "hello\tphysica\thackr");
-        System.out.println(Arrays.toString(output));
+        Intent start = new Intent(getApplicationContext(), SpellCheck.class);
+        start.putExtra(INT_1, 0);
+        start.putExtra(STRING_1, "hello\tphysica\thackr");
+        startService(start);
     }
 
     @Override

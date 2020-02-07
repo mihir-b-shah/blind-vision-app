@@ -39,7 +39,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".OCRDebug"></activity>
+        <service
+            android:name=".SpellCheck"
+            android:exported="false"></service>
+
+        <activity android:name=".OCRDebug" />
         <activity android:name=".Navigate" />
 
         <service
@@ -81,10 +85,9 @@
             android:value="ocr,label" />
 
         <activity android:name=".MainActivity">
-            android:permission="android.permission.BIND_TEXT_SERVICE"
+            <!--android:permission="android.permission.BIND_TEXT_SERVICE" -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

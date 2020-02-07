@@ -82,7 +82,8 @@ public class Session implements java.io.Serializable {
             input.append(annot.getDescription());
             input.append('\t');
         }
-        String[] output = StringUtils.correct(context, input.toString());
+        // need to correct this, its ONE service call.
+        String[] output = null; // correct(context, input.toString());
         for(int i = 0; i<output.length; ++i) {
             annotations[i].updateDescr(output[i]);
         }
