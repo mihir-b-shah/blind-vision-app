@@ -38,6 +38,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
     implementation files('libs/PhysicaloidJAR.jar')
+    implementation files('libs/textrazor-1.0.12.jar')
 }
 
 apply plugin: 'com.google.gms.google-services'

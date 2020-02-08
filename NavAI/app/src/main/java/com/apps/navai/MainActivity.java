@@ -9,13 +9,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
-import android.media.AudioManager;
 import android.os.Bundle;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import androidx.appcompat.app.AppCompatActivity;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 /*
 1. Should manage the main sequence UI.
@@ -49,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
     private String spkText;
     private String mCurrentPhotoPath;
     private String photoPath2;
-    private AudioManager audioManager;
     private boolean first = true;
     private float[] rotMat;
     private float[] rotMat2;
@@ -130,14 +126,6 @@ public class MainActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_main);
 
-        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-
-        // deprecated but simple
-        if(audioManager.isWiredHeadsetOn()) {
-            audioManager.setMode(AudioManager.MODE_RINGTONE | AudioManager.MODE_IN_CALL);
-            audioManager.setSpeakerphoneOn(true);
-        }
-
         mCurrentPhotoPath = st == null ? null : st.getString("photo-path");
         spkText = st == null ? null : st.getString("spk-text");
         first = st == null;
@@ -157,19 +145,13 @@ public class MainActivity extends AppCompatActivity {
          */
 
         Intent start = new Intent(getApplicationContext(), SpellCheck.class);
-        start.putExtra(INT_1, 0);
-        start.putExtra(STRING_1, "hello\tphysica\thackr");
-        startService(start);
+        start.putExtra(STRING_1, "hackr");
+        if(first) startActivityForResult(start, 13);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(audioManager.getMode() != AudioManager.MODE_NORMAL ||
-                audioManager.isWiredHeadsetOn()) {
-            audioManager.setMode(AudioManager.MODE_NORMAL);
-            audioManager.setSpeakerphoneOn(false);
-        }
     }
 
     @Override
