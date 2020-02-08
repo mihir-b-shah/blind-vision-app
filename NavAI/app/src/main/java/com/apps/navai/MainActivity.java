@@ -14,6 +14,8 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import java.util.Arrays;
+
 /*
 1. Should manage the main sequence UI.
  */
@@ -144,9 +146,11 @@ public class MainActivity extends AppCompatActivity {
         if(first) startService(start);
          */
 
+        String[] dat = {"physica", "hackr", "hello"};
         Intent start = new Intent(getApplicationContext(), SpellCheck.class);
-        start.putExtra(STRING_1, "hackr");
-        if(first) startActivityForResult(start, 13);
+        start.putExtra(INT_1, 13);
+        start.putExtra(STRING_1, dat);
+        if(first) startService(start);
     }
 
     @Override
