@@ -8,13 +8,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 
 /*
 1. Should manage the main sequence UI.
@@ -25,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String STRING_1;
     public static final String STRING_2;
     public static final String STRING_3;
+    public static final String STRING_ARRAY_1;
     public static final String SERVICE_RESPONSE;
     public static final String INT_1;
     public static final String INT_2;
@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
         STRING_1 = "string1_8941930";
         STRING_2 = "string2_1210210";
         STRING_3 = "string3_6795899";
+        STRING_ARRAY_1 = "string_array1_54059495";
         SERVICE_RESPONSE = "stringG1_32932093";
         INT_1 = "int1_4390403";
         INT_2 = "int2_1201021";
@@ -107,6 +108,13 @@ public class MainActivity extends AppCompatActivity {
                         session = (Session) intent.getSerializableExtra("session");
                         break;
                         // DONE
+                    case 13:
+                        SpellCheck.FloatVector conf =
+                                (SpellCheck.FloatVector) intent.getSerializableExtra("conf");
+                        ArrayList<String> corr = intent.getStringArrayListExtra("output");
+                        System.out.println("Conf: " + conf);
+                        System.out.println("Corr: " + corr);
+                        break;
                     default:
                         System.err.println("Error code: " + code);
                         System.err.println("Process id not recognized.");
@@ -124,8 +132,8 @@ public class MainActivity extends AppCompatActivity {
     @SuppressWarnings("deprecation")
     @Override
     protected void onCreate(Bundle st) {
+        System.out.println("On create called.");
         super.onCreate(st);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setContentView(R.layout.activity_main);
 
         mCurrentPhotoPath = st == null ? null : st.getString("photo-path");

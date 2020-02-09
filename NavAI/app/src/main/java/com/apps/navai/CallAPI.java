@@ -1,10 +1,12 @@
 package com.apps.navai;
 
 import android.app.IntentService;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.os.Environment;
 import android.renderscript.Allocation;
@@ -36,9 +38,11 @@ import java.util.List;
 
 import static com.apps.navai.MainActivity.INT_1;
 import static com.apps.navai.MainActivity.INT_2;
+import static com.apps.navai.MainActivity.SERVICE_RESPONSE;
 import static com.apps.navai.MainActivity.STRING_1;
 import static com.apps.navai.MainActivity.STRING_2;
 import static com.apps.navai.MainActivity.STRING_3;
+import static com.apps.navai.MainActivity.STRING_ARRAY_1;
 
 public class CallAPI extends IntentService {
     private List<FirebaseVisionObject> recObjects;
@@ -55,6 +59,33 @@ public class CallAPI extends IntentService {
     private FirebaseVisionObjectDetector objectDetector;
     private FirebaseVisionTextRecognizer detector;
 
+    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        @SuppressWarnings("deprecation")
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction() != null
+                    && intent.getAction().equals(SERVICE_RESPONSE)) {
+                if(intent.getIntExtra(INT_1, -1) == 0) {
+                    ArrayList<String> output = intent.getStringArrayListExtra("output");
+                    SpellCheck.FloatVector conf = (SpellCheck.FloatVector)
+                            intent.getSerializableExtra("conf");
+                    session.setOutput(callNum, output, conf);
+
+                    if(writefile != null) {
+                        dump(createFile(writefile));
+                    } else {
+                        Intent out = new Intent(SERVICE_RESPONSE);
+                        out.putExtra(INT_1, id);
+                        out.putExtra("session", session);
+                        LocalBroadcastManager.getInstance(getApplicationContext())
+                                .sendBroadcast(out);
+                        CallAPI.this.stopSelf();
+                    }
+                }
+            }
+        }
+    };
+
     static {
         photoMap = new ArrayList<>(2);
     }
@@ -70,6 +101,9 @@ public class CallAPI extends IntentService {
         imagepath = intent.getStringExtra(STRING_1);
         writefile = intent.getStringExtra(STRING_2);
         readfile = intent.getStringExtra(STRING_3);
+
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
+                receiver, new IntentFilter(SERVICE_RESPONSE));
         if(readfile == null) {
             objectRecognize();
         } else {
@@ -187,21 +221,14 @@ public class CallAPI extends IntentService {
                 recText = firebaseVisionText;
                 System.out.println("TEXT: " + recText.getText());
                 convert();
-
                 session.genDescriptions(callNum);
-                // session.correctOCR(this, callNum);
 
-                if(writefile != null) {
-                    dump(createFile(writefile));
-                } else {
-                    Intent out = new Intent(MainActivity.SERVICE_RESPONSE);
-                    out.putExtra(INT_1, id);
-                    out.putExtra("session", session);
-                    LocalBroadcastManager.getInstance(getApplicationContext())
-                            .sendBroadcast(out);
-                    CallAPI.this.stopSelf();
-                }
-                }).addOnFailureListener(
+                Intent spell = new Intent(getApplicationContext(), SpellCheck.class);
+                String[] input = session.getDescrArray(callNum);
+                spell.putExtra(INT_1, 0);
+                spell.putExtra(STRING_ARRAY_1, input);
+                startService(spell);
+            }).addOnFailureListener(
                         e -> System.err.println("Error encountered in text send."));
     }
 
@@ -228,7 +255,7 @@ public class CallAPI extends IntentService {
             bw.flush();
             bw.close();
 
-            Intent out = new Intent(MainActivity.SERVICE_RESPONSE);
+            Intent out = new Intent(SERVICE_RESPONSE);
             out.putExtra(INT_1, id);
             out.putExtra("session", session);
             LocalBroadcastManager.getInstance(getApplicationContext())

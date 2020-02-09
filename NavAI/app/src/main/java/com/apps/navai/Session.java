@@ -9,6 +9,8 @@ import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Session implements java.io.Serializable {
     private Annotation[] annotationsOne;
@@ -75,17 +77,20 @@ public class Session implements java.io.Serializable {
         System.out.println("Recycled bitmaps!");
     }
 
-    public void correctOCR(Context context, int callNum) {
-        StringBuilder input = new StringBuilder();
+    public String[] getDescrArray(int callNum) {
         Annotation[] annotations = callNum == 0 ? annotationsOne : annotationsTwo;
-        for(Annotation annot: annotations) {
-            input.append(annot.getDescription());
-            input.append('\t');
-        }
-        // need to correct this, its ONE service call.
-        String[] output = null; // correct(context, input.toString());
-        for(int i = 0; i<output.length; ++i) {
-            annotations[i].updateDescr(output[i]);
+        String[] input = Arrays.stream(annotations)
+                .map(Annotation::getDescription).toArray(String[]::new);
+        return input;
+    }
+
+    public void setOutput(int callNum, ArrayList<String> strings, SpellCheck.FloatVector floats) {
+        Annotation[] annotations = callNum == 0 ? annotationsOne : annotationsTwo;
+        for(int i = 0; i<annotations.length; ++i) {
+            annotations[i].updateDescr(String.format("%s %s",
+                    strings.get(i<<1), strings.get(1+(i<<1))));
+            annotations[i].setMatch(annotations[i].getConfidence() * (
+                    floats.get(i) > 1f ? 1f : floats.get(i)));
         }
     }
 

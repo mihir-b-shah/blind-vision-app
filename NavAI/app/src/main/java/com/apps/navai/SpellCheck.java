@@ -9,12 +9,15 @@ import com.textrazor.AnalysisException;
 import com.textrazor.NetworkException;
 import com.textrazor.TextRazor;
 import com.textrazor.annotations.Response;
-import com.textrazor.annotations.Sentence;
 import com.textrazor.annotations.Word;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.IntFunction;
 
 import static com.apps.navai.MainActivity.INT_1;
 import static com.apps.navai.MainActivity.STRING_1;
@@ -28,48 +31,103 @@ public class SpellCheck extends IntentService {
     private static final int INSERT_ONE = 0x400;
     private static final int DELETE_ONE = 0x100000;
 
+    public static boolean called;
+
     public SpellCheck() {
         super("SpellCheck");
+        called = true;
+    }
+
+    class FloatVector implements Serializable {
+        private float[] data;
+        private int ptr;
+
+        FloatVector() {
+            data = new float[4];
+        }
+
+        void add(float dat) {
+            if(ptr == data.length) {
+                float[] aux = new float[ptr << 1];
+                System.arraycopy(data, 0, aux, 0, ptr);
+                data = aux;
+            }
+            data[ptr++] = dat;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append('[');
+            for(int i = 0; i<ptr; ++i) {
+                sb.append(data[i]);
+                sb.append(','); sb.append(' ');
+            }
+            sb.delete(sb.length()-2, sb.length());
+            sb.append(']');
+            return sb.toString();
+        }
+
+        public float get(int i) {
+            return data[i];
+        }
+
+        public void writeObject(ObjectOutputStream oos) throws IOException {
+            oos.writeInt(data.length);
+            for(int i = 0; i<ptr; ++i) {
+                oos.writeFloat(data[i]);
+            }
+            oos.writeFloat(Float.NaN);
+        }
+
+        public void readObject(ObjectInputStream ois) throws IOException {
+            data = new float[data.length];
+            ptr = 0;
+            float buffer;
+            while(!Float.isNaN(buffer = ois.readFloat())) {
+                data[ptr++] = buffer;
+            }
+        }
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        String[] data = intent.getStringArrayExtra(STRING_1);
-        String[] output = new String[data.length];
-        float[] conf = new float[data.length];
+        String[] data = intent.getStringArrayExtra(MainActivity.STRING_ARRAY_1);
         String input = join(data);
         TextRazor textRazor = new TextRazor(getString(R.string.textrazor_key));
         textRazor.setExtractors(Arrays.asList("spelling"));
 
+        ArrayList<String> output = new ArrayList<>();
+        FloatVector conf = new FloatVector();
+
         try {
             Response result = textRazor.analyze(input).getResponse();
-            final List<Sentence> sentences = result.getSentences();
-            int wordCtr = 0;
+            final List<Word> sentences = result.getWords();
 
-            for (Sentence sentence : sentences) {
-                final List<Word> words = sentence.getWords();
-                for (Word word : words) {
-                    final List<Word.Suggestion> suggestions = word.getSpellingSuggestions();
-                    String curr = data[wordCtr];
+            for (Word word : sentences) {
+                String curr = input.substring(word.getStartingPos(), word.getEndingPos());
+                if(curr.length() == 0) continue;
+                final List<Word.Suggestion> suggestions = word.getSpellingSuggestions();
 
-                    String opt = null;
-                    double minDist = 1_000_000_000;
-                    double currDist;
+                String opt = null;
+                double minDist = 1_000_000_000;
+                double currDist;
 
-                    final int size = suggestions.size();
-                    Word.Suggestion sug;
-                    for (int i = 0; i < size; ++i) {
-                        sug = suggestions.get(i);
-                        if (minDist > (currDist = sug.getScore() *
-                                (1 - weightedEditDistance(curr, sug.getSuggestion()) / curr.length()))) {
-                            minDist = currDist;
-                            opt = sug.getSuggestion();
-                        }
+                final int size = suggestions.size();
+
+                Word.Suggestion sug;
+                for (int i = 0; i < size; ++i) {
+                    sug = suggestions.get(i);
+                    if (minDist > (currDist = sug.getScore() *
+                            (1 - weightedEditDistance(curr, sug.getSuggestion()) / curr.length()))) {
+                        minDist = currDist;
+                        opt = sug.getSuggestion();
                     }
-
-                    conf[wordCtr] = (float) minDist;
-                    output[wordCtr++] = opt;
                 }
+
+                conf.add((float) minDist);
+                output.add(curr);
+                output.add(opt);
             }
         } catch (NetworkException | AnalysisException e) {
             System.err.println(e.getMessage());
@@ -97,16 +155,6 @@ public class SpellCheck extends IntentService {
     private static double collapse(int one) {
         return (((one >>> DELETE_MASK) + (one >>> INSERT_MASK)) & RIGHT_MASK) * 1.5
                 + (one & RIGHT_MASK);
-    }
-
-    private static void print2DArray(int[][] array, IntFunction func) {
-        for (int[] a : array) {
-            for (int b : a) {
-                System.out.printf("%3d", func.apply(b));
-            }
-            System.out.println();
-        }
-        System.out.println();
     }
 
     /**

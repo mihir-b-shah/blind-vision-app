@@ -88,6 +88,8 @@ public class Annotation implements Serializable,Comparable<Annotation> {
 
     public void setMatch(float match) {this.match = match; }
 
+    public void setConf(float conf) {this.conf = conf;}
+
     public Rect getRect() {
         return rect;
     }

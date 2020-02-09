@@ -43,14 +43,20 @@
             android:name=".SpellCheck"
             android:exported="false"></service>
 
-        <activity android:name=".OCRDebug" />
-        <activity android:name=".Navigate" />
+        <activity android:name=".OCRDebug">
+            android:screenOrientation="landscape"
+        </activity>
+        <activity android:name=".Navigate">
+            android:screenOrientation="landscape"
+        </activity>
 
         <service
             android:name=".ArduinoInterface"
             android:exported="false" />
 
-        <activity android:name=".CustomCamera" />
+        <activity android:name=".CustomCamera">
+            android:screenOrientation="landscape"
+        </activity>
 
         <service
             android:name=".Converge"
@@ -63,7 +69,7 @@
             android:enabled="true"
             android:exported="true" />
 
-        <activity android:name=".WordInput" />
+        <activity android:name=".WordInput" android:screenOrientation="landscape"/>
 
         <service
             android:name=".Speak"
@@ -84,7 +90,7 @@
             android:name="com.google.firebase.ml.vision.DEPENDENCIES"
             android:value="ocr,label" />
 
-        <activity android:name=".MainActivity">
+        <activity android:name=".MainActivity" android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
