@@ -26,8 +26,7 @@ public class Annotation implements Serializable,Comparable<Annotation> {
     private float conf; // confidence
     private Rect rect; // bounding polygon
     private char tag; // tag
-    private float match; // match with query string
-    private double[] extra;
+    private transient double[] extra;
 
     public Annotation(FirebaseVisionObject obj) {
         tag = 'o';
@@ -93,27 +92,31 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         return conf;
     }
 
-    public void setMatch(float match) {this.match = match; }
-
     public int getExtraCount() {return extra.length;}
 
-    public void setConf(float conf) {this.conf = conf;}
+    public void multConf(float conf) {this.conf *= conf;}
 
     public Rect getRect() {
         return rect;
-    }
-
-    public float getConf() {
-        return conf*match;
     }
 
     public void updateDescr(String s) {
         descr = s;
     }
 
+    public void dotScores(float[] vals, int s, int e) {
+        float score = 0;
+        for(int i = s; i<e; ++i) {
+            score += extra[i-s]*vals[i];
+        }
+        score /= (e-s);
+        conf *= score;
+        extra = null;
+    }
+
     @Override
     public int compareTo(Annotation e) {
-        return Float.compare(e.getConf(), getConf());
+        return Float.compare(e.getConfidence(), getConfidence());
     }
 
     @Override
@@ -126,7 +129,6 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         out.writeChar(tag);
         out.writeUTF(descr == null ? "NULL" : descr);
         out.writeFloat(conf);
-        out.writeFloat(match);
 
         if(rect != null) {
             out.writeInt(4);
@@ -137,12 +139,11 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         }
     }
 
-    public void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+    public void readObject(ObjectInputStream in) throws IOException {
         tag = in.readChar();
         descr = in.readUTF();
         descr = descr.equals(NULL) ? null : descr;
         conf = in.readFloat();
-        match = in.readFloat();
         final int next = in.readInt();
         rect = next == 0 ? null : new Rect(in.readInt(), in.readInt(), in.readInt(), in.readInt());
     }

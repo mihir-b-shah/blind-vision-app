@@ -26,6 +26,7 @@ public class Converge extends IntentService {
 
     private int numObjScores;
     private int numTxtScores;
+    private int numObjects;
 
     public Converge() {
         super("Converge");
@@ -39,21 +40,6 @@ public class Converge extends IntentService {
         converge();
     }
 
-    private class Pair implements Comparable<Pair> {
-        final Annotation sess;
-        final float conf;
-
-        Pair(Annotation s, float c) {
-            sess = s;
-            conf = c;
-        }
-
-        @Override
-        public int compareTo(Pair other) {
-            return Float.compare(other.conf, conf);
-        }
-    }
-
     public void converge() {
         int size = session.sizeOne();
         String[] buffer = new String[size+1];
@@ -65,10 +51,31 @@ public class Converge extends IntentService {
     }
 
     private Annotation[] convergeScores(int id, float[] f) {
-        PriorityQueue<Pair> pq = new PriorityQueue<>();
+        // map the floats to the annotations.
+        int ptr = 0;
+        for(int i = 0; i<numObjects; ++i) {
+            Annotation annotation = id == 0 ?
+                    session.getAnnotationFirst(i) : session.getAnnotationSecond(i);
+            int ct = annotation.getExtraCount();
+            annotation.dotScores(f, ptr, ptr+ct);
+            ptr += ct;
+        }
+
+        for(int i = numObjects; i<(id == 0 ? session.sizeOne() : session.sizeTwo()); ++i) {
+            Annotation annotation = id == 0 ?
+                    session.getAnnotationFirst(i) : session.getAnnotationSecond(i);
+            if(Math.abs(f[ptr+1] - 1_000_000_000) < 0.01) {
+                annotation.multConf(f[ptr]);
+            } else {
+                annotation.multConf(Math.max(f[ptr], f[ptr+1]));
+            }
+            ptr += 2;
+        }
+
+        PriorityQueue<Annotation> pq = new PriorityQueue<>();
         for(int i = 0; i<f.length; ++i) {
-            pq.offer(new Pair(id == 0 ? session.getAnnotationFirst(i) :
-                    session.getAnnotationSecond(i), f[i]));
+            pq.offer(id == 0 ? session.getAnnotationFirst(i) :
+                    session.getAnnotationSecond(i));
         }
         Annotation[] result = new Annotation[NUM_ANNOT];
         if(NUM_ANNOT > pq.size()) {
@@ -77,9 +84,7 @@ public class Converge extends IntentService {
 
         } else {
             for (int i = 0; i < NUM_ANNOT; ++i) {
-                Annotation a = pq.poll().sess;
-                a.setMatch(f[i]);
-                result[i] = a;
+                result[i] = pq.poll();
             }
         }
         return result;
@@ -117,6 +122,7 @@ public class Converge extends IntentService {
                     ++ptr;
                 }
             }
+            numObjects = ptr;
             String str = String.format("{\"qs\":\"%s\", \"obj\":\"%s\", \"txt\":\"%s\"}",
                     keyword, objString(session, ptr, id), txtString(session, ptr, id));
             byte[] write = str.getBytes(StandardCharsets.UTF_8);
@@ -127,7 +133,7 @@ public class Converge extends IntentService {
             con.connect();
             if(con.getResponseCode() == 200) {
                 InputStream instr = con.getInputStream();
-                result = readFloatArray(, instr);
+                result = readFloatArray(numTxtScores+numObjScores, instr);
             } else {
                 System.err.printf("%d, Request did not go through correctly.%n",
                         con.getResponseCode());
@@ -143,19 +149,19 @@ public class Converge extends IntentService {
     private String objString(Session session, int stop, int id) {
         StringBuilder sb = new StringBuilder();
         if(id == 0) {
-            sb.append(stop); sb.append('\n');
+            sb.append(stop); sb.append('\t');
             for (int i = 0; i<stop; ++i) {
                 Annotation a = session.getAnnotationFirst(i);
                 numObjScores += a.getExtraCount();
-                sb.append(a.getExtraCount()); sb.append('\n');
-                sb.append(a.getDescription()); sb.append('\n');
+                sb.append(a.getExtraCount()); sb.append('\t');
+                sb.append(a.getDescription()); sb.append('\t');
             }
         } else {
-            sb.append(stop); sb.append('\n');
+            sb.append(stop); sb.append('\t');
             for (int i = 0; i<stop; ++i) {
                 Annotation a = session.getAnnotationSecond(i);
-                numTxtScores
-                sb.append(a.getDescription()); sb.append('\n');
+                numTxtScores += 2;
+                sb.append(a.getDescription() == null ? "NULL" : a.getDescription()); sb.append('\t');
             }
         }
         sb.deleteCharAt(sb.length()-1);

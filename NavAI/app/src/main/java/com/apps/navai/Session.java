@@ -89,8 +89,7 @@ public class Session implements java.io.Serializable {
         for(int i = 0; i<annotations.length; ++i) {
             annotations[i].updateDescr(String.format("%s\t%s",
                     strings.get(i<<1), strings.get(1+(i<<1))));
-            annotations[i].setMatch(annotations[i].getConfidence() * (
-                    floats.get(i) > 1f ? 1f : floats.get(i)));
+            annotations[i].multConf(floats.get(i) > 1f ? 1f : floats.get(i));
         }
     }
 
