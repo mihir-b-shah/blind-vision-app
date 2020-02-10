@@ -154,10 +154,10 @@ public class MainActivity extends AppCompatActivity {
         if(first) startService(start);
          */
 
-        String[] dat = {"physica", "hackr", "hello"};
+        String[] dat = {"physica", "hackr", "largedog"};
         Intent start = new Intent(getApplicationContext(), SpellCheck.class);
         start.putExtra(INT_1, 13);
-        start.putExtra(STRING_1, dat);
+        start.putExtra(STRING_ARRAY_1, dat);
         if(first) startService(start);
     }
 

@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.apps.navai.MainActivity.INT_1;
-import static com.apps.navai.MainActivity.STRING_1;
 
 public class SpellCheck extends IntentService {
 
@@ -118,6 +117,7 @@ public class SpellCheck extends IntentService {
                 Word.Suggestion sug;
                 for (int i = 0; i < size; ++i) {
                     sug = suggestions.get(i);
+                    System.out.println(sug.getSuggestion());
                     if (minDist > (currDist = sug.getScore() *
                             (1 - weightedEditDistance(curr, sug.getSuggestion()) / curr.length()))) {
                         minDist = currDist;
@@ -142,11 +142,11 @@ public class SpellCheck extends IntentService {
         }
     }
 
-    private static String join(String[] data) {
+    public static String join(String[] data) {
         StringBuilder sb = new StringBuilder();
         for (String s : data) {
             sb.append(s);
-            sb.append(' '); sb.append(' '); // differentiate
+            sb.append('\t');
         }
         sb.deleteCharAt(sb.length() - 1);
         return sb.toString();

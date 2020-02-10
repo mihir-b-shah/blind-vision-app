@@ -87,7 +87,7 @@ public class Session implements java.io.Serializable {
     public void setOutput(int callNum, ArrayList<String> strings, SpellCheck.FloatVector floats) {
         Annotation[] annotations = callNum == 0 ? annotationsOne : annotationsTwo;
         for(int i = 0; i<annotations.length; ++i) {
-            annotations[i].updateDescr(String.format("%s %s",
+            annotations[i].updateDescr(String.format("%s\t%s",
                     strings.get(i<<1), strings.get(1+(i<<1))));
             annotations[i].setMatch(annotations[i].getConfidence() * (
                     floats.get(i) > 1f ? 1f : floats.get(i)));

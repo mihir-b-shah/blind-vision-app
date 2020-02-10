@@ -54,15 +54,8 @@ public class Converge extends IntentService {
     public void converge() {
         int size = session.sizeOne();
         String[] buffer = new String[size+1];
-        buffer[0] = keyword;
-        for(int i = 0; i<size; ++i) {
-            buffer[i+1] = session.getAnnotationFirst(i).getDescription();
-        }
-        float[] scores = genScores(buffer);
+        float[] scores = genScores(session, 0);
         Annotation[] a1 = convergeScores(0, scores);
-        for(int i = 0; i<size; ++i) {
-            buffer[i+1] = session.getAnnotationSecond(i).getDescription();
-        }
         scores = genScores(buffer);
         Annotation[] a2 = convergeScores(1, scores);
         done(a1, a2);
@@ -100,7 +93,7 @@ public class Converge extends IntentService {
         Converge.this.stopSelf();
     }
 
-    private float[] genScores(String[] buffer) {
+    private float[] genScores(Session session, int id) {
         URL url;
         HttpURLConnection con;
         try {
@@ -109,8 +102,20 @@ public class Converge extends IntentService {
             con.setRequestMethod("POST");
             con.setRequestProperty("Content-Type", "application/json");
             OutputStream os = con.getOutputStream();
-            String str = String.format("{\"w1\":\"%s\", \"w2\":\"%s\"}", arrayString(buffer),
-                    buffer[0]);
+            int ptr = 0;
+            if(id == 0) {
+                while(ptr < session.sizeOne() &&
+                        session.getAnnotationFirst(ptr).getRTag()==Annotation.OBJECT_TAG) {
+                    ++ptr;
+                }
+            } else {
+                while(ptr < session.sizeTwo() &&
+                        session.getAnnotationSecond(ptr).getRTag()==Annotation.OBJECT_TAG) {
+                    ++ptr;
+                }
+            }
+            String str = String.format("{\"qs\":\"%s\", \"obj\":\"%s\", \"txt\":\"%s\"}",
+                    keyword, objString(session, ptr, id), txtString(session, ptr, id));
             byte[] write = str.getBytes(StandardCharsets.UTF_8);
             os.write(write);
             os.flush();
@@ -131,15 +136,46 @@ public class Converge extends IntentService {
         return null;
     }
 
-    private String arrayString(String[] strings) {
+    // each session object a description tab-delimited.
+    private String objString(Session session, int stop, int id) {
         StringBuilder sb = new StringBuilder();
-        sb.append('[');
-        for(int i = 1; i<strings.length; ++i) {
-            sb.append(String.format("%s, ", strings[i].trim().toLowerCase()));
+        if(id == 0) {
+            sb.append(stop); sb.append('\n');
+            for (int i = 0; i<stop; ++i) {
+                Annotation a = session.getAnnotationFirst(i);
+                sb.append(a.getExtraCount()); sb.append('\n');
+                sb.append(a.getDescription()); sb.append('\n');
+            }
+        } else {
+            sb.append(stop); sb.append('\n');
+            for (int i = 0; i<stop; ++i) {
+                Annotation a = session.getAnnotationSecond(i);
+                sb.append(a.getExtraCount()); sb.append('\n');
+                sb.append(a.getDescription()); sb.append('\n');
+            }
         }
         sb.deleteCharAt(sb.length()-1);
+        return sb.toString();
+    }
+
+    private String txtString(Session session, int start, int id) {
+        StringBuilder sb = new StringBuilder();
+        if(id == 0) {
+            sb.append(session.sizeOne() - start);
+            sb.append('\t');
+            for (int i = start; i<session.sizeOne(); ++i) {
+                sb.append(session.getAnnotationFirst(i).getDescription());
+                sb.append('\t');
+            }
+        } else {
+            sb.append(session.sizeTwo() - start);
+            sb.append('\t');
+            for (int i = start; i<session.sizeTwo(); ++i) {
+                sb.append(session.getAnnotationSecond(i).getDescription());
+                sb.append('\t');
+            }
+        }
         sb.deleteCharAt(sb.length()-1);
-        sb.append(']');
         return sb.toString();
     }
 

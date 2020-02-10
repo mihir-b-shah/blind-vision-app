@@ -1,12 +1,12 @@
 
 from flask import Flask, request
-from nltk.corpus import wordnet as wn
 from gensim.test.utils import common_texts
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+from gensim.models import KeyedVectors
 import numpy
-import re
 
 model = 0
+word_vectors = 0
 app = Flask(__name__)
 
 def init():
@@ -14,50 +14,75 @@ def init():
     global model
     model = Doc2Vec(documents, vector_size=5, window=2, min_count=1, workers=4)
     model.delete_temporary_training_data(keep_doctags_vectors=True, keep_inference=True)
-
-def word_pathsim(w1,w2):
-    list1 = wn.synsets(w1,'n')
-    list2 = wn.synsets(w2,'n')
-
-    if(len(list1) == 0 or len(list2) == 0):
-        return 0
-
-    return (wn.synsets(w1,'n')[0]).path_similarity(wn.synsets(w2,'n')[0])
+    word_vectors = KeyedVectors.load(fname, mmap='r')
 
 def phrasesim(s1,s2):
-    global model
     v1 = model.infer_vector(s1)
     v2 = model.infer_vector(s2)
     dot = numpy.dot(v1,v2)
     m1 = numpy.dot(v1,v1)
     m2 = numpy.dot(v2,v2)
-    return (1+dot/((m1**0.5)*(m2**0.5)))/2
+    return dot/(m1*m2)**0.5
+
+def wordsim(s1,s2):
+    v1 = word_vectors[s1]
+    v2 = word_vectors[s2]
+    dot = numpy.dot(v1,v2)
+    m1 = numpy.dot(v1,v1)
+    m2 = numpy.dot(v2,v2)
+    return dot/(m1*m2)**0.5
+
+def is_phrase(s):
+    return s.strip().find(' ') == -1
 
 @app.route('/', methods = ['POST'])
 def gen_ss():
     init()
     word_data = request.get_json()
-    w1 = word_data['w1']
-    w2 = word_data['w2']
+    query_string = word_data['qs']
+    objstring = word_data['obj'].split('\n')
+    txtstring = word_data['txt'].split('\n')
 
-    pattern = re.compile("\\b,\\s")
-    array_1 = pattern.split(w1[1:len(w1)-1])
-    array_11 = []
+    obj_ct = int(objstring[0])
+    txt_ct = int(txtstring[0])
 
-    for string in array_1:
-        array_11.append(string.split(' '))
+    objscores = []
+    txtscores = []
+
+    ptr = 0
+    while(ptr < obj_ct):
+        inner_ct = int(objstring[ptr])
+        inpin = []
+        inner_ptr = ptr+1
+        while(inner_ptr < ptr+1+inner_ct):
+            if(is_phrase(objstring[inner_ptr])):
+                inpin.append(phrasesim(query_string, objstring[inner_ptr]))
+            else:
+                inpin.append(wordsim(query_string, objstring[inner_ptr]))
+            inner_ptr += 1
+        ptr = inner_ptr
+        objscores.append(inpin)
+
+    ptr = 0
+    while(ptr < txt_ct):
+        inpin = []
+        inner_ptr = ptr+1
+        orig = txtstring[inner_ptr]
+        corr = txtstring[inner_ptr+1]
+        ptr = inner_ptr+2
+        if(is_phrase(orig)):
+            inpin.append(phrasesim(query_string, orig))
+        else:
+            inpin.append(wordsim(query_string, orig))
+        if(is_phrase(corr)):
+            inpin.append(phrasesim(query_string, corr))
+        else:
+            inpin.append(wordsim(query_string, corr))
+        txtscores.append(inpin)
 
     output = []
-    for i in range(0, len(array_1)):
-        val = 0
-        if(len(array_11[i]) == 1):
-            val = word_pathsim(str(array_1[i]),w2)
-        else:
-            arr = []
-            arr.append(w2)
-            val = phrasesim(array_11[i], arr)
-
-        output.append(val)
+    output.append(objscores)
+    output.append(txtscores)
     res = str(output)
     return res
 
