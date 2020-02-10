@@ -74,7 +74,9 @@ def gen_ss():
             inpin.append(phrasesim(query_string, orig))
         else:
             inpin.append(wordsim(query_string, orig))
-        if(is_phrase(corr)):
+        if(corr == "NULL"):
+            inpin.append(1000000000)
+        elif(is_phrase(corr)):
             inpin.append(phrasesim(query_string, corr))
         else:
             inpin.append(wordsim(query_string, corr))
