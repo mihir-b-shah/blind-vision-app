@@ -24,6 +24,9 @@ public class Converge extends IntentService {
     private static final int NUM_ANNOT = 1;
     private int id;
 
+    private int numObjScores;
+    private int numTxtScores;
+
     public Converge() {
         super("Converge");
     }
@@ -56,7 +59,7 @@ public class Converge extends IntentService {
         String[] buffer = new String[size+1];
         float[] scores = genScores(session, 0);
         Annotation[] a1 = convergeScores(0, scores);
-        scores = genScores(buffer);
+        scores = genScores(session, 1);
         Annotation[] a2 = convergeScores(1, scores);
         done(a1, a2);
     }
@@ -124,7 +127,7 @@ public class Converge extends IntentService {
             con.connect();
             if(con.getResponseCode() == 200) {
                 InputStream instr = con.getInputStream();
-                result = readFloatArray(buffer.length-1, instr);
+                result = readFloatArray(, instr);
             } else {
                 System.err.printf("%d, Request did not go through correctly.%n",
                         con.getResponseCode());
@@ -143,6 +146,7 @@ public class Converge extends IntentService {
             sb.append(stop); sb.append('\n');
             for (int i = 0; i<stop; ++i) {
                 Annotation a = session.getAnnotationFirst(i);
+                numObjScores += a.getExtraCount();
                 sb.append(a.getExtraCount()); sb.append('\n');
                 sb.append(a.getDescription()); sb.append('\n');
             }
@@ -150,7 +154,7 @@ public class Converge extends IntentService {
             sb.append(stop); sb.append('\n');
             for (int i = 0; i<stop; ++i) {
                 Annotation a = session.getAnnotationSecond(i);
-                sb.append(a.getExtraCount()); sb.append('\n');
+                numTxtScores
                 sb.append(a.getDescription()); sb.append('\n');
             }
         }
