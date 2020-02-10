@@ -40,8 +40,8 @@ def gen_ss():
     init()
     word_data = request.get_json()
     query_string = word_data['qs']
-    objstring = word_data['obj'].split('\n')
-    txtstring = word_data['txt'].split('\n')
+    objstring = word_data['obj'].split('\t')
+    txtstring = word_data['txt'].split('\t')
 
     obj_ct = int(objstring[0])
     txt_ct = int(txtstring[0])
