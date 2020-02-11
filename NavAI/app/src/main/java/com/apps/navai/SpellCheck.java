@@ -11,12 +11,16 @@ import com.textrazor.TextRazor;
 import com.textrazor.annotations.Response;
 import com.textrazor.annotations.Word;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 import static com.apps.navai.MainActivity.INT_1;
@@ -30,11 +34,57 @@ public class SpellCheck extends IntentService {
     private static final int INSERT_ONE = 0x400;
     private static final int DELETE_ONE = 0x100000;
 
-    public static boolean called;
+    private static LongSet dictionary;
 
     public SpellCheck() {
         super("SpellCheck");
-        called = true;
+    }
+
+    public static void loadDict() {
+        dictionary = new LongSet(8191);
+        try {
+            BufferedReader br = new BufferedReader(new FileReader("hashdict.txt"));
+            String line;
+            while((line = br.readLine()) != null) {
+                dictionary.insert(Long.parseLong(line));
+            }
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+        }
+    }
+
+    public static void freeDict() {
+        dictionary = null;
+    }
+
+    public static String findSpaces(String str) {
+        if(str.length() > 64) return str;
+        long[] dp = new long[str.length()+1];
+        for(int i = 1; i<1+str.length(); ++i) {
+            final int LIM = Math.min(i+1,13);
+            long base = 0L;
+            for(int j = 1; j<LIM; ++j) {
+                base <<= 5;
+                base += str.charAt(i-j)-96L;
+                if(dictionary.contains(base)) {
+                    dp[i] = dp[i-j]+(i==64?0:(1L<<i));
+                }
+            }
+        }
+        long aux = dp[str.length()];
+        StringBuilder sb = new StringBuilder();
+
+        int ptr = 0;
+        aux >>>= 1;
+
+        while(aux > 0) {
+            int jump = 1+Long.numberOfTrailingZeros(aux);
+            sb.append(str, ptr, ptr+jump); sb.append(' ');
+            ptr += jump;
+            aux >>>= jump;
+        }
+        sb.deleteCharAt(sb.length()-1);
+        return sb.toString();
     }
 
     class FloatVector implements Serializable {
