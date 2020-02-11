@@ -2,7 +2,6 @@ package com.apps.navai;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.util.StringBuilderPrinter;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -21,9 +20,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.PriorityQueue;
-import java.util.function.IntBinaryOperator;
-import java.util.function.LongBinaryOperator;
 import java.util.stream.Stream;
 
 import static com.apps.navai.MainActivity.INT_1;
