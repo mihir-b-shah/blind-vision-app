@@ -180,7 +180,11 @@ public class Converge extends IntentService {
                 String orig = s.substring(0, tabIdx).toLowerCase().trim();
                 String corr = s.substring(tabIdx).toLowerCase().trim();
                 if(orig.indexOf(' ') != -1 && corr.indexOf(' ') == -1) {
-                    s = String.format("%s %s", orig, SpellCheck.findSpaces(corr));
+                    s = String.format("%s %s", orig, corr = SpellCheck.findSpaces(corr));
+                    String res;
+                    if((res = SpellCheck.condenseSpaces(corr)).equals(corr)) {
+                        s = String.format("%s %s", orig, res);
+                    }
                 }
                 sb.append(s);
                 sb.append('\t');

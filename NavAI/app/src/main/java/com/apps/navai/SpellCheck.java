@@ -2,6 +2,7 @@ package com.apps.navai;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.util.StringBuilderPrinter;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -20,7 +21,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.StringTokenizer;
+import java.util.PriorityQueue;
+import java.util.function.IntBinaryOperator;
+import java.util.function.LongBinaryOperator;
+import java.util.stream.Stream;
 
 import static com.apps.navai.MainActivity.INT_1;
 
@@ -88,23 +92,157 @@ public class SpellCheck extends IntentService {
 
     // to be implemented
     public static String condenseSpaces(String phrase) {
-        // we utilize a UFDS to model the problem.
-        String[] words = Arrays.stream(phrase.split(" ")).
-                map(String::toLowerCase).toArray(String[]::new);
-        int[] ufds = new int[words.length];
-        boolean[] cont = new boolean[words.length];
-        for(int i = 0; i<words.length-1; ++i) {
-            long hash = hash(words[i]+words[i+1], 0,
-                    words[i].length()+words[i+1].length());
-            if(dictionary.contains(hash)) {
-                cont[i] = true;
+        Stream<String> wordStream = Arrays.stream(phrase.split(" ")).
+                map(String::toLowerCase);
+        String[] words = wordStream.toArray(String[]::new);
+        if(words.length>63) return phrase;
+
+        int[] prefix = new int[words.length+1];
+        long[] hashes = wordStream.mapToLong(SpellCheck::hash).toArray();
+        for(int i = 0; i<words.length; ++i) {
+            prefix[i+1] = words[i].length() + prefix[i];
+        }
+
+        int[] best16 = new int[(words.length >>> 4) + 1];
+
+        for(int k = 0; k<words.length; k+=0x10000) {
+            final int LIM = words.length-k < 16 ?
+                    (1<<words.length-k-1)-1 : 0x7fff;
+            final int LIM_LEN = Math.min(16, words.length-k);
+            int best = LIM;
+            for(int i = 0; i<LIM; ++i) {
+                // probably faster than asymptotically better DP
+                long res = longestZeroString(i, LIM_LEN);
+                int pos = (int) (res >>> 32);
+                int len = (int) (res & 0x7fff_ffff);
+                if(prefix[pos+len]-prefix[pos] > 12) {
+                    continue;
+                }
+                // guarantee that this word is length 12 or less
+                final int LOOP_LIM = Math.min(16, words.length-k);
+                long hash = 0;
+                boolean possible = true;
+                int ptr = 0;
+                while(ptr < LOOP_LIM) {
+                    if((i & 1 << ptr) == 0) {
+                        hash <<= words[k+ptr].length();
+                        hash += hashes[k+ptr];
+                    } else {
+                        if(!dictionary.contains(hash)) possible = false;
+                        hash = 0;
+                    }
+                }
+                if(possible && popCount(i) < popCount(best)) {
+                    best = i;
+                }
+            }
+            best16[k >>> 16] = best;
+        }
+
+        // generate the string
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i<words.length; i+=16) {
+            int aux = best16[i];
+            for(int j = 0; j<Math.min(16, words.length-i); ++j) {
+                sb.append(words[i+j]);
+                if((aux&1) == 1) sb.append(' ');
+                aux >>>= 1;
             }
         }
 
-
+        sb.deleteCharAt(sb.length()-1);
+        return sb.toString();
     }
 
-    public static final long hash(String str, int s, int e) {
+    private static int popCount(int x) {
+        x = (x & 0x55555555) + ((x >> 1) & 0x55555555);
+        x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+        x = (x & 0x0F0F0F0F) + ((x >> 4) & 0x0F0F0F0F);
+        x = (x & 0x00FF00FF) + ((x >> 8) & 0x00FF00FF);
+        return (x & 0x0000FFFF) + ((x >> 16) & 0x0000FFFF);
+    }
+
+    // why does java not have goto? nooooooooo
+    private static final long longestZeroString(int x, int len) {
+        x = ~x & (1 << len) - 1;
+        int y,s,apos = 0;
+        if (x == 0) {
+            apos = len;
+            return (long) apos << 32;
+        }
+        y = x & (x << 1);
+        if (y == 0) {
+            s = 1;
+            apos = Integer.numberOfLeadingZeros(x)-32+len;
+            return ((long) apos << 32) + s;
+        }
+        x = y & (y << 2);
+        if (x == 0) {
+            s = 2;
+            x = y;
+            y = x & (x << 1);
+            if (y != 0) {
+                s += 1;
+                x = y;
+            }
+            apos = Integer.numberOfLeadingZeros(x)-32+len;
+            return ((long) apos << 32) + s;
+        }
+        y = x & (x << 4);
+        if (y == 0) {
+            s = 4;
+            y = x & (x << 2);
+            if (y != 0) {
+                s += 2;
+                x = y;
+            }
+            y = x & (x << 1);
+            if (y != 0) {
+                s += 1;
+                x = y;
+            }
+            apos = Integer.numberOfLeadingZeros(x)-32+len;
+            return ((long) apos << 32) + s;
+        }
+        x = y & (y << 8);
+        if (x == 0) {
+            s = 8;
+            x = y;
+            y = x & (x << 4);
+            if (y != 0) {
+                s += 4;
+                x = y;
+            }
+            y = x & (x << 2);
+            if (y != 0) {
+                s += 2;
+                x = y;
+            }
+            y = x & (x << 1);
+            if (y != 0) {
+                s += 1;
+                x = y;
+            }
+            apos = Integer.numberOfLeadingZeros(x)-32+len;
+            return ((long) apos << 32) + s;
+        }
+        if (x == 0xFFFF8000) {
+            apos = 0;
+            return len + ((long) apos << 32);
+        }
+        s = 16;
+        return ((long) apos << 32) + s;
+    }
+
+    private static final long hash(String str) {
+        long hash = 0;
+        for(int i = 0; i<str.length(); ++i) {
+            hash += str.charAt(i)-96L << 5*i;
+        }
+        return hash;
+    }
+
+    private static final long hash(String str, int s, int e) {
         long hash = 0;
         for(int i = 0; i<e-s; ++i) {
             hash += str.charAt(i+s)-96L << 5*i;
