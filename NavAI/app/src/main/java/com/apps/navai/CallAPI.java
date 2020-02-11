@@ -45,6 +45,7 @@ import static com.apps.navai.MainActivity.STRING_3;
 import static com.apps.navai.MainActivity.STRING_ARRAY_1;
 
 public class CallAPI extends IntentService {
+    private static final String CALLAPI_RESPONSE = "resp_49309430943";
     private List<FirebaseVisionObject> recObjects;
     private FirebaseVisionText recText;
     private Session session;
@@ -54,7 +55,7 @@ public class CallAPI extends IntentService {
     private int callNum;
 
     private String writefile;
-    private static final List<Bitmap> photoMap;
+    private static volatile List<String> photoMap;
 
     private FirebaseVisionObjectDetector objectDetector;
     private FirebaseVisionTextRecognizer detector;
@@ -64,8 +65,8 @@ public class CallAPI extends IntentService {
         @SuppressWarnings("deprecation")
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction() != null
-                    && intent.getAction().equals(SERVICE_RESPONSE)) {
-                if(intent.getIntExtra(INT_1, -1) == 0) {
+                    && intent.getAction().equals(CALLAPI_RESPONSE)) {
+                if(intent.getIntExtra(INT_1, -1) == 101) {
                     ArrayList<String> output = intent.getStringArrayListExtra("output");
                     SpellCheck.FloatVector conf = (SpellCheck.FloatVector)
                             intent.getSerializableExtra("conf");
@@ -103,7 +104,7 @@ public class CallAPI extends IntentService {
         readfile = intent.getStringExtra(STRING_3);
 
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
-                receiver, new IntentFilter(SERVICE_RESPONSE));
+                receiver, new IntentFilter(CALLAPI_RESPONSE));
         if(readfile == null) {
             objectRecognize();
         } else {
@@ -151,11 +152,11 @@ public class CallAPI extends IntentService {
         return null;
     }
 
-    public static Bitmap getFirstBitmap() {
+    public static String getFirstBitmap() {
         return photoMap.get(0);
     }
 
-    public static Bitmap getSecondBitmap() {
+    public static String getSecondBitmap() {
         return photoMap.get(1);
     }
 
@@ -184,7 +185,7 @@ public class CallAPI extends IntentService {
         bitmap = filter(bitmap);
         bitmap = Bitmap.createScaledBitmap(bitmap, CustomCamera.CAMERA_WIDTH,
                 CustomCamera.CAMERA_HEIGHT, true);
-        photoMap.add(bitmap);
+        photoMap.add(imagepath);
 
         FirebaseVisionObjectDetectorOptions options =
                 new FirebaseVisionObjectDetectorOptions.Builder()
@@ -225,7 +226,7 @@ public class CallAPI extends IntentService {
 
                 Intent spell = new Intent(getApplicationContext(), SpellCheck.class);
                 String[] input = session.getDescrArray(callNum);
-                spell.putExtra(INT_1, 0);
+                spell.putExtra(INT_1, 101);
                 spell.putExtra(STRING_ARRAY_1, input);
                 startService(spell);
             }).addOnFailureListener(
@@ -255,7 +256,7 @@ public class CallAPI extends IntentService {
             bw.flush();
             bw.close();
 
-            Intent out = new Intent(SERVICE_RESPONSE);
+            Intent out = new Intent(CALLAPI_RESPONSE);
             out.putExtra(INT_1, id);
             out.putExtra("session", session);
             LocalBroadcastManager.getInstance(getApplicationContext())

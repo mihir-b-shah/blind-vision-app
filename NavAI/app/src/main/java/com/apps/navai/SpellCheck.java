@@ -12,7 +12,6 @@ import com.textrazor.annotations.Response;
 import com.textrazor.annotations.Word;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -20,8 +19,8 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import static com.apps.navai.MainActivity.INT_1;
 
@@ -85,6 +84,32 @@ public class SpellCheck extends IntentService {
         }
         sb.deleteCharAt(sb.length()-1);
         return sb.toString();
+    }
+
+    // to be implemented
+    public static String condenseSpaces(String phrase) {
+        // we utilize a UFDS to model the problem.
+        String[] words = Arrays.stream(phrase.split(" ")).
+                map(String::toLowerCase).toArray(String[]::new);
+        int[] ufds = new int[words.length];
+        boolean[] cont = new boolean[words.length];
+        for(int i = 0; i<words.length-1; ++i) {
+            long hash = hash(words[i]+words[i+1], 0,
+                    words[i].length()+words[i+1].length());
+            if(dictionary.contains(hash)) {
+                cont[i] = true;
+            }
+        }
+
+
+    }
+
+    public static final long hash(String str, int s, int e) {
+        long hash = 0;
+        for(int i = 0; i<e-s; ++i) {
+            hash += str.charAt(i+s)-96L << 5*i;
+        }
+        return hash;
     }
 
     class FloatVector implements Serializable {
@@ -193,12 +218,17 @@ public class SpellCheck extends IntentService {
     }
 
     public static String join(String[] data) {
+        System.out.println(Arrays.toString(data));
+        boolean flag = false;
         StringBuilder sb = new StringBuilder();
         for (String s : data) {
+            flag = true;
             sb.append(s);
             sb.append('\t');
         }
-        sb.deleteCharAt(sb.length() - 1);
+        if(flag) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
         return sb.toString();
     }
 

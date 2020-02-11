@@ -404,7 +404,7 @@ public class CustomCamera extends AppCompatActivity {
         System.out.println("Bundle null: " + (savedInstanceState == null));
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_custom_camera);
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        // setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         notFirst = savedInstanceState != null && savedInstanceState.getBoolean("not-first");
         System.out.println("notFirst: " + notFirst);
 

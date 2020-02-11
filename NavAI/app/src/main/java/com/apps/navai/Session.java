@@ -2,6 +2,7 @@ package com.apps.navai;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
@@ -58,7 +59,8 @@ public class Session implements java.io.Serializable {
 
     public void genDescriptions(int index) {
         System.out.println("Got to descriptions!");
-        final Bitmap bitmap = index == 0 ? CallAPI.getFirstBitmap() : CallAPI.getSecondBitmap();
+        final String bitmapPath = index == 0 ? CallAPI.getFirstBitmap() : CallAPI.getSecondBitmap();
+        Bitmap bitmap = BitmapFactory.decodeFile(bitmapPath);
         int iter = 0;
         final Annotation[] annotations = index == 0 ? annotationsOne : annotationsTwo;
         while(iter < annotations.length && annotations[iter].getRTag()==Annotation.OBJECT_TAG) {

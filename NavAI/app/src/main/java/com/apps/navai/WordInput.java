@@ -18,6 +18,7 @@ public class WordInput extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        System.out.println("Word input called.");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_word_input);
 

@@ -146,18 +146,10 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
-        /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        if(first) startService(start);
-         */
-
-        String[] dat = {"physica", "hackr", "largedog"};
-        Intent start = new Intent(getApplicationContext(), SpellCheck.class);
-        start.putExtra(INT_1, 13);
-        start.putExtra(STRING_ARRAY_1, dat);
         if(first) startService(start);
     }
 

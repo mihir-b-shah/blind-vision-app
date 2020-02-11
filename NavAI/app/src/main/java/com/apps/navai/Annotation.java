@@ -53,8 +53,10 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         List<FirebaseVisionImageLabel> labels = task.getResult();
         Stream<FirebaseVisionImageLabel> labelStream = labels.stream();
 
-        extra = labels.stream().mapToDouble(x->x.getConfidence()).toArray();
-        descr = SpellCheck.join(labels.stream().map(x->x.getText()).toArray(String[]::new));
+        extra = labels.stream().
+                mapToDouble(FirebaseVisionImageLabel::getConfidence).toArray();
+        descr = SpellCheck.join(labels.stream().map(FirebaseVisionImageLabel::getText).
+                toArray(String[]::new));
         /*
         NEEDS TO BE FIXED
 
