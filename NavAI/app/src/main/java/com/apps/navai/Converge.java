@@ -42,7 +42,6 @@ public class Converge extends IntentService {
 
     public void converge() {
         int size = session.sizeOne();
-        String[] buffer = new String[size+1];
         float[] scores = genScores(session, 0);
         Annotation[] a1 = convergeScores(0, scores);
         scores = genScores(session, 1);
@@ -154,14 +153,15 @@ public class Converge extends IntentService {
                 Annotation a = session.getAnnotationFirst(i);
                 numObjScores += a.getExtraCount();
                 sb.append(a.getExtraCount()); sb.append('\t');
-                sb.append(a.getDescription()); sb.append('\t');
+                sb.append(a.getDescription().toLowerCase().trim()); sb.append('\t');
             }
         } else {
             sb.append(stop); sb.append('\t');
             for (int i = 0; i<stop; ++i) {
                 Annotation a = session.getAnnotationSecond(i);
                 numTxtScores += 2;
-                sb.append(a.getDescription() == null ? "NULL" : a.getDescription()); sb.append('\t');
+                sb.append(a.getDescription() == null ? "NULL" :
+                        a.getDescription().toLowerCase().trim()); sb.append('\t');
             }
         }
         sb.deleteCharAt(sb.length()-1);
@@ -173,17 +173,35 @@ public class Converge extends IntentService {
         if(id == 0) {
             sb.append(session.sizeOne() - start);
             sb.append('\t');
+            SpellCheck.loadDict();
             for (int i = start; i<session.sizeOne(); ++i) {
-                sb.append(session.getAnnotationFirst(i).getDescription());
+                String s = session.getAnnotationFirst(i).getDescription();
+                final int tabIdx = s.indexOf('\t');
+                String orig = s.substring(0, tabIdx).toLowerCase().trim();
+                String corr = s.substring(tabIdx).toLowerCase().trim();
+                if(orig.indexOf(' ') != -1 && corr.indexOf(' ') == -1) {
+                    s = String.format("%s %s", orig, SpellCheck.findSpaces(corr));
+                }
+                sb.append(s);
                 sb.append('\t');
             }
+            SpellCheck.freeDict();
         } else {
             sb.append(session.sizeTwo() - start);
             sb.append('\t');
+            SpellCheck.loadDict();
             for (int i = start; i<session.sizeTwo(); ++i) {
-                sb.append(session.getAnnotationSecond(i).getDescription());
+                String s = session.getAnnotationSecond(i).getDescription();
+                final int tabIdx = s.indexOf('\t');
+                String orig = s.substring(0, tabIdx).toLowerCase().trim();
+                String corr = s.substring(tabIdx).toLowerCase().trim();
+                if(orig.indexOf(' ') != -1 && corr.indexOf(' ') == -1) {
+                    s = String.format("%s %s", orig, SpellCheck.findSpaces(corr));
+                }
+                sb.append(s);
                 sb.append('\t');
             }
+            SpellCheck.freeDict();
         }
         sb.deleteCharAt(sb.length()-1);
         return sb.toString();
