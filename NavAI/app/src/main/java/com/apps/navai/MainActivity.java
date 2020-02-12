@@ -8,12 +8,16 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Rect;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /*
 1. Should manage the main sequence UI.
@@ -147,11 +151,22 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
+        /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        if(first) startService(start);
+        if(first) startService(start); */
+
+        Annotation annot1 = new Annotation('t', "Big cat", 0.97f,
+                new Rect(1159, 199, 1201, 201));
+        Annotation annot2 = new Annotation('t', "Big cat", 0.71f,
+                new Rect(1159, 399, 1201, 401));
+        float[] rotMat1 = {1f,0f,0f,0f,1f,0f,0f,0f,1f};
+        float[] rotMat2 = {1f,0f,0f,0f,1f,0f,0f,0f,1f};
+        CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+        PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, annot1, annot2, rotMat1, rotMat2);
+        System.out.println(vect.getMgn() + " " + vect.getDir());
     }
 
     @Override

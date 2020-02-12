@@ -104,9 +104,6 @@ public class CallAPI extends IntentService {
         imagepath = intent.getStringExtra(STRING_1);
         writefile = intent.getStringExtra(STRING_2);
         readfile = intent.getStringExtra(STRING_3);
-
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
-                receiver, new IntentFilter(CALLAPI_RESPONSE));
         if(readfile == null) {
             objectRecognize();
         } else {
@@ -218,6 +215,7 @@ public class CallAPI extends IntentService {
                         .build();
         detector = FirebaseVision.getInstance()
                 .getCloudTextRecognizer(options);
+        System.out.println("Before text detect register");
         Task<FirebaseVisionText> result =
             detector.processImage(image)
                 .addOnSuccessListener(firebaseVisionText -> {
@@ -230,16 +228,28 @@ public class CallAPI extends IntentService {
                 String[] input = session.getDescrArray(callNum);
                 spell.putExtra(INT_1, 101);
                 spell.putExtra(STRING_ARRAY_1, input);
+                System.out.println("Spell count");
                 startService(spell);
             }).addOnFailureListener(
                         e -> System.err.println("Error encountered in text send."));
     }
 
     @Override
+    public void onCreate() {
+        super.onCreate();
+        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
+                receiver, new IntentFilter(CALLAPI_RESPONSE));
+    }
+
+    @Override
     public void onDestroy() {
+        super.onDestroy();
         try {
             if(objectDetector != null) objectDetector.close();
             if(detector != null) detector.close();
+            try {
+                unregisterReceiver(receiver);
+            } catch (IllegalArgumentException e) {} // silent catch
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -327,7 +337,7 @@ public class CallAPI extends IntentService {
                 session = new Session(null, out, null, imagepath, null, readfile);
             }
 
-            Intent intent = new Intent();
+            Intent intent = new Intent(SERVICE_RESPONSE);
             intent.putExtra(INT_1, 3);
             intent.putExtra(STRING_1, session);
             LocalBroadcastManager.getInstance(getApplicationContext())

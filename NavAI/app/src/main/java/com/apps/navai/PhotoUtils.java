@@ -7,6 +7,8 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.util.SizeF;
 
+import java.util.List;
+
 import static java.lang.Math.*;
 
 public class PhotoUtils {
@@ -33,6 +35,10 @@ public class PhotoUtils {
     private static void setup() {
         try {
             CameraCharacteristics props = manager.getCameraCharacteristics(getNormCamera());
+            List<CameraCharacteristics.Key<?>> keys = props.getKeys();
+            for(CameraCharacteristics.Key key: keys) {
+                System.out.println(key.getName());
+            }
             float[] focals = props.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
             focLength = focals[0];
             size = props.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
@@ -116,7 +122,7 @@ public class PhotoUtils {
      * @param normVertical the normalized vertical pixel component
      * @return get angle of elevation
      */
-    private static double getVerticalAngle(double normVertical) {
+    public static double getVerticalAngle(double normVertical) {
         return atan(2*normVertical*tan(2*atan(size.getHeight()/focLength)));
     }
 
@@ -124,6 +130,8 @@ public class PhotoUtils {
         return atan(2*normHorizontal*tan(2*atan(size.getWidth()/focLength)));
     }
 
+    // may not get called on a majority of devices due to the lack of the key
+    // and design flaws for the device.
     private static void correct(Annotation annot) {
         try {
             final float[] K = manager.getCameraCharacteristics(getNormCamera())

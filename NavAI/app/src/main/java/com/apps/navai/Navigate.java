@@ -23,7 +23,9 @@ public class Navigate extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             if(intent.getAction().equals(XY_FILTER)) {
-                // final navigation algorithm
+                double Xloc = intent.getDoubleExtra("X", 0D);
+                double Yloc = intent.getDoubleExtra("Y", 0D);
+                Xloc += X; Yloc += Y;
             }
         }
     };
