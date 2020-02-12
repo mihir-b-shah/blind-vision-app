@@ -106,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case 8:
                         session = (Session) intent.getSerializableExtra("session");
+                        System.out.println(session);
                         break;
                         // DONE
                     case 13:

@@ -113,7 +113,6 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         }
         score /= (e-s);
         conf *= score;
-        extra = null;
     }
 
     @Override

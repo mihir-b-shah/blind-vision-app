@@ -20,7 +20,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static com.apps.navai.MainActivity.INT_1;
 
@@ -86,15 +85,13 @@ public class SpellCheck extends IntentService {
         return sb.toString();
     }
 
-    // to be implemented
     public static String condenseSpaces(String phrase) {
-        Stream<String> wordStream = Arrays.stream(phrase.split(" ")).
-                map(String::toLowerCase);
-        String[] words = wordStream.toArray(String[]::new);
+        String[] words = Arrays.stream(phrase.trim().split("\\s+")).
+                map(String::toLowerCase).toArray(String[]::new);
         if(words.length>63) return phrase;
 
         int[] prefix = new int[words.length+1];
-        long[] hashes = wordStream.mapToLong(SpellCheck::hash).toArray();
+        long[] hashes = Arrays.stream(words).mapToLong(SpellCheck::hash).toArray();
         for(int i = 0; i<words.length; ++i) {
             prefix[i+1] = words[i].length() + prefix[i];
         }
@@ -111,22 +108,30 @@ public class SpellCheck extends IntentService {
                 long res = longestZeroString(i, LIM_LEN);
                 int pos = (int) (res >>> 32);
                 int len = (int) (res & 0x7fff_ffff);
-                if(prefix[pos+len]-prefix[pos] > 12) {
+                if(prefix[Math.min(pos+len+1,words.length)]-prefix[pos] > 12) {
                     continue;
                 }
                 // guarantee that this word is length 12 or less
-                final int LOOP_LIM = Math.min(16, words.length-k);
-                long hash = 0;
+
+                long hash = hash(words[k]);
+                int currLen = words[k].length();
                 boolean possible = true;
-                int ptr = 0;
-                while(ptr < LOOP_LIM) {
-                    if((i & 1 << ptr) == 0) {
-                        hash <<= words[k+ptr].length();
-                        hash += hashes[k+ptr];
+                int ptr = 1;
+
+                while(ptr < LIM_LEN) {
+                    if((i & 1 << ptr-1) == 0) {
+                        hash += hashes[k+ptr] << 5*currLen;
+                        currLen += words[k+ptr].length();
                     } else {
-                        if(!dictionary.contains(hash)) possible = false;
-                        hash = 0;
+                        if(!dictionary.contains(hash)) {
+                            possible = false;
+                            break;
+                        }
+                        // preload the next one
+                        hash = hash(words[k+ptr]);
+                        currLen = words[k+ptr].length();
                     }
+                    ++ptr;
                 }
                 if(possible && popCount(i) < popCount(best)) {
                     best = i;
@@ -146,8 +151,7 @@ public class SpellCheck extends IntentService {
             }
         }
 
-        sb.deleteCharAt(sb.length()-1);
-        return sb.toString();
+        return sb.toString().trim();
     }
 
     private static int popCount(int x) {
@@ -169,7 +173,7 @@ public class SpellCheck extends IntentService {
         y = x & (x << 1);
         if (y == 0) {
             s = 1;
-            apos = Integer.numberOfLeadingZeros(x)-32+len;
+            apos = 32-Integer.numberOfLeadingZeros(x)-s;
             return ((long) apos << 32) + s;
         }
         x = y & (y << 2);
@@ -181,7 +185,7 @@ public class SpellCheck extends IntentService {
                 s += 1;
                 x = y;
             }
-            apos = Integer.numberOfLeadingZeros(x)-32+len;
+            apos = 32-Integer.numberOfLeadingZeros(x)-s;
             return ((long) apos << 32) + s;
         }
         y = x & (x << 4);
@@ -197,7 +201,7 @@ public class SpellCheck extends IntentService {
                 s += 1;
                 x = y;
             }
-            apos = Integer.numberOfLeadingZeros(x)-32+len;
+            apos = 32-Integer.numberOfLeadingZeros(x)-s;
             return ((long) apos << 32) + s;
         }
         x = y & (y << 8);
@@ -219,7 +223,7 @@ public class SpellCheck extends IntentService {
                 s += 1;
                 x = y;
             }
-            apos = Integer.numberOfLeadingZeros(x)-32+len;
+            apos = 32-Integer.numberOfLeadingZeros(x)-s;
             return ((long) apos << 32) + s;
         }
         if (x == 0xFFFF8000) {
@@ -341,10 +345,14 @@ public class SpellCheck extends IntentService {
         } catch (NetworkException | AnalysisException e) {
             System.err.println(e.getMessage());
         } finally {
-            Intent out = new Intent(MainActivity.SERVICE_RESPONSE);
+            System.out.println("Got to finally block.");
+            Intent out = new Intent(CallAPI.CALLAPI_RESPONSE);
             out.putExtra("output", output);
             out.putExtra("conf", conf);
-            out.putExtra(INT_1, intent.getIntExtra(INT_1, -1));
+            int id = intent.getIntExtra(INT_1, -1);
+            System.out.println("Id: " + id);
+            out.putExtra(INT_1, id);
+            System.out.println("About to send respose.");
             LocalBroadcastManager.getInstance(getApplicationContext())
                     .sendBroadcast(out);
             stopSelf();

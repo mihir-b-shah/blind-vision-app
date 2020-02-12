@@ -45,7 +45,7 @@ import static com.apps.navai.MainActivity.STRING_3;
 import static com.apps.navai.MainActivity.STRING_ARRAY_1;
 
 public class CallAPI extends IntentService {
-    private static final String CALLAPI_RESPONSE = "resp_49309430943";
+    public static final String CALLAPI_RESPONSE = "resp_49309430943";
     private List<FirebaseVisionObject> recObjects;
     private FirebaseVisionText recText;
     private Session session;
@@ -64,9 +64,11 @@ public class CallAPI extends IntentService {
         @Override
         @SuppressWarnings("deprecation")
         public void onReceive(Context context, Intent intent) {
+            System.out.println("Callapi receiver called." + intent.getIntExtra(INT_1, -1));
             if (intent.getAction() != null
                     && intent.getAction().equals(CALLAPI_RESPONSE)) {
                 if(intent.getIntExtra(INT_1, -1) == 101) {
+                    System.out.println("Got inside the receiver.");
                     ArrayList<String> output = intent.getStringArrayListExtra("output");
                     SpellCheck.FloatVector conf = (SpellCheck.FloatVector)
                             intent.getSerializableExtra("conf");
@@ -256,7 +258,7 @@ public class CallAPI extends IntentService {
             bw.flush();
             bw.close();
 
-            Intent out = new Intent(CALLAPI_RESPONSE);
+            Intent out = new Intent(SERVICE_RESPONSE);
             out.putExtra(INT_1, id);
             out.putExtra("session", session);
             LocalBroadcastManager.getInstance(getApplicationContext())

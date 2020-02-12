@@ -41,7 +41,6 @@ public class Converge extends IntentService {
     }
 
     public void converge() {
-        int size = session.sizeOne();
         float[] scores = genScores(session, 0);
         Annotation[] a1 = convergeScores(0, scores);
         scores = genScores(session, 1);
