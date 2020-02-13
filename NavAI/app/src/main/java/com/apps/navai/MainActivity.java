@@ -91,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
                     case 6:
                         System.out.println("Arrived at case 6");
                         session = (Session) intent.getSerializableExtra("session");
+                        System.out.println(session);
                         next = new Intent(getApplicationContext(), CallAPI.class);
                         next.putExtra(STRING_1, photoPath2);
                         next.putExtra(STRING_2, "READFILE_TWO");
@@ -100,25 +101,38 @@ public class MainActivity extends AppCompatActivity {
                         startService(next);
                         break;
                     case 7:
-                        System.out.println("Arrived at case 7");
                         session2 = (Session) intent.getSerializableExtra("session");
-                        next = new Intent(getApplicationContext(), Converge.class);
-                        next.putExtra(STRING_2, Session.combine(session, session2));
-                        next.putExtra(STRING_1, spkText);
+                        next = new Intent(getApplicationContext(), SpellCheck.class);
+                        String[] input = session.getDescrArray(0);
                         next.putExtra(INT_1, 8);
+                        next.putExtra(STRING_ARRAY_1, input);
                         startService(next);
                         break;
                     case 8:
+                        ArrayList<String> output = intent.getStringArrayListExtra("output");
+                        SpellCheck.FloatVector conf = (SpellCheck.FloatVector)
+                                intent.getSerializableExtra("conf");
+                        session.setOutput(0, output, conf);
+                        next = new Intent(getApplicationContext(), SpellCheck.class);
+                        input = session2.getDescrArray(1);
+                        next.putExtra(INT_1, 9);
+                        next.putExtra(STRING_ARRAY_1, input);
+                        startService(next);
+                        break;
+                    case 9:
+                        output = intent.getStringArrayListExtra("output");
+                        conf = (SpellCheck.FloatVector)
+                                intent.getSerializableExtra("conf");
+                        session2.setOutput(1, output, conf);
+                        next = new Intent(getApplicationContext(), Converge.class);
+                        next.putExtra(STRING_2, Session.combine(session, session2));
+                        next.putExtra(STRING_1, spkText);
+                        next.putExtra(INT_1, 10);
+                        startService(next);
+                        break;
+                    case 10:
                         session = (Session) intent.getSerializableExtra("session");
                         System.out.println(session);
-                        break;
-                        // DONE
-                    case 13:
-                        SpellCheck.FloatVector conf =
-                                (SpellCheck.FloatVector) intent.getSerializableExtra("conf");
-                        ArrayList<String> corr = intent.getStringArrayListExtra("output");
-                        System.out.println("Conf: " + conf);
-                        System.out.println("Corr: " + corr);
                         break;
                     default:
                         System.err.println("Error code: " + code);
@@ -151,13 +165,17 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
-        /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        if(first) startService(start); */
+        if(first) startService(start);
 
+        /*
+        Intent start = new Intent(getApplicationContext(), CustomCamera.class);
+        if(first) startActivityForResult(start, 0); */
+
+        /*
         Annotation annot1 = new Annotation('t', "Big cat", 0.97f,
                 new Rect(1159, 199, 1201, 201));
         Annotation annot2 = new Annotation('t', "Big cat", 0.71f,
@@ -166,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
         float[] rotMat2 = {1f,0f,0f,0f,1f,0f,0f,0f,1f};
         CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, annot1, annot2, rotMat1, rotMat2);
-        System.out.println(vect.getMgn() + " " + vect.getDir());
+        System.out.println(vect.getMgn() + " " + vect.getDir()); */
     }
 
     @Override

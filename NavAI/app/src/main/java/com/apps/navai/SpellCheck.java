@@ -1,7 +1,9 @@
 package com.apps.navai;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
+import android.os.Environment;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -12,6 +14,7 @@ import com.textrazor.annotations.Response;
 import com.textrazor.annotations.Word;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -22,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.apps.navai.MainActivity.INT_1;
+import static com.apps.navai.MainActivity.SERVICE_RESPONSE;
 
 public class SpellCheck extends IntentService {
 
@@ -38,10 +42,12 @@ public class SpellCheck extends IntentService {
         super("SpellCheck");
     }
 
-    public static void loadDict() {
+    public static void loadDict(Context context) {
         dictionary = new LongSet(8191);
         try {
-            BufferedReader br = new BufferedReader(new FileReader("hashdict.txt"));
+            File folder = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
+            final String filename = folder.getAbsolutePath()+'/'+"hashdict.txt";
+            BufferedReader br = new BufferedReader(new FileReader(filename));
             String line;
             while((line = br.readLine()) != null) {
                 dictionary.insert(Long.parseLong(line));
@@ -346,7 +352,7 @@ public class SpellCheck extends IntentService {
             System.err.println(e.getMessage());
         } finally {
             System.out.println("Got to finally block.");
-            Intent out = new Intent(CallAPI.CALLAPI_RESPONSE);
+            Intent out = new Intent(SERVICE_RESPONSE);
             out.putExtra("output", output);
             out.putExtra("conf", conf);
             int id = intent.getIntExtra(INT_1, -1);

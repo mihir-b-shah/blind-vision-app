@@ -172,7 +172,7 @@ public class Converge extends IntentService {
         if(id == 0) {
             sb.append(session.sizeOne() - start);
             sb.append('\t');
-            SpellCheck.loadDict();
+            SpellCheck.loadDict(this);
             for (int i = start; i<session.sizeOne(); ++i) {
                 String s = session.getAnnotationFirst(i).getDescription();
                 final int tabIdx = s.indexOf('\t');
@@ -192,7 +192,7 @@ public class Converge extends IntentService {
         } else {
             sb.append(session.sizeTwo() - start);
             sb.append('\t');
-            SpellCheck.loadDict();
+            SpellCheck.loadDict(this);
             for (int i = start; i<session.sizeTwo(); ++i) {
                 String s = session.getAnnotationSecond(i).getDescription();
                 final int tabIdx = s.indexOf('\t');

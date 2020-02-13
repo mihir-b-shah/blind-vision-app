@@ -159,6 +159,11 @@ public class Session implements java.io.Serializable {
         srcFileTwo = srcFileTwo.equals(nullstr) ? null : srcFileTwo;
     }
 
+    @Override
+    public String toString() {
+        return String.format("Session data: %b %b", annotationsOne != null, annotationsTwo != null);
+    }
+
     private void annotBuffer(Annotation ant, CharBuffer buffer) {
         buffer.append(ant.getRTag());
         buffer.append('\n');

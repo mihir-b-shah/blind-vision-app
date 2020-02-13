@@ -1,6 +1,6 @@
 
 from flask import Flask, request
-from gensim.test.utils import common_texts
+from gensim.test.utils import common_texts, get_tmpfile
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from gensim.models import KeyedVectors
 import numpy
@@ -14,6 +14,7 @@ def init():
     global model
     model = Doc2Vec(documents, vector_size=5, window=2, min_count=1, workers=4)
     model.delete_temporary_training_data(keep_doctags_vectors=True, keep_inference=True)
+    fname = get_tmpfile("vectors.kv")
     word_vectors = KeyedVectors.load(fname, mmap='r')
 
 def phrasesim(s1,s2):
@@ -74,9 +75,7 @@ def gen_ss():
             inpin.append(phrasesim(query_string, orig))
         else:
             inpin.append(wordsim(query_string, orig))
-        if(corr == "NULL"):
-            inpin.append(1000000000)
-        elif(is_phrase(corr)):
+        if(is_phrase(corr)):
             inpin.append(phrasesim(query_string, corr))
         else:
             inpin.append(wordsim(query_string, corr))

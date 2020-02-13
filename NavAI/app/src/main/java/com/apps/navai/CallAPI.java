@@ -60,35 +60,6 @@ public class CallAPI extends IntentService {
     private FirebaseVisionObjectDetector objectDetector;
     private FirebaseVisionTextRecognizer detector;
 
-    private final BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        @SuppressWarnings("deprecation")
-        public void onReceive(Context context, Intent intent) {
-            System.out.println("Callapi receiver called." + intent.getIntExtra(INT_1, -1));
-            if (intent.getAction() != null
-                    && intent.getAction().equals(CALLAPI_RESPONSE)) {
-                if(intent.getIntExtra(INT_1, -1) == 101) {
-                    System.out.println("Got inside the receiver.");
-                    ArrayList<String> output = intent.getStringArrayListExtra("output");
-                    SpellCheck.FloatVector conf = (SpellCheck.FloatVector)
-                            intent.getSerializableExtra("conf");
-                    session.setOutput(callNum, output, conf);
-
-                    if(writefile != null) {
-                        dump(createFile(writefile));
-                    } else {
-                        Intent out = new Intent(SERVICE_RESPONSE);
-                        out.putExtra(INT_1, id);
-                        out.putExtra("session", session);
-                        LocalBroadcastManager.getInstance(getApplicationContext())
-                                .sendBroadcast(out);
-                        CallAPI.this.stopSelf();
-                    }
-                }
-            }
-        }
-    };
-
     static {
         photoMap = new ArrayList<>(2);
     }
@@ -224,21 +195,19 @@ public class CallAPI extends IntentService {
                 convert();
                 session.genDescriptions(callNum);
 
-                Intent spell = new Intent(getApplicationContext(), SpellCheck.class);
-                String[] input = session.getDescrArray(callNum);
-                spell.putExtra(INT_1, 101);
-                spell.putExtra(STRING_ARRAY_1, input);
-                System.out.println("Spell count");
-                startService(spell);
+                if(writefile != null) {
+                    dump(createFile(writefile));
+                } else {
+                    Intent out = new Intent(SERVICE_RESPONSE);
+                    out.putExtra(INT_1, id);
+                    out.putExtra("session", session);
+                    LocalBroadcastManager.getInstance(getApplicationContext())
+                            .sendBroadcast(out);
+                    CallAPI.this.stopSelf();
+                }
+
             }).addOnFailureListener(
                         e -> System.err.println("Error encountered in text send."));
-    }
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
-                receiver, new IntentFilter(CALLAPI_RESPONSE));
     }
 
     @Override
@@ -247,9 +216,6 @@ public class CallAPI extends IntentService {
         try {
             if(objectDetector != null) objectDetector.close();
             if(detector != null) detector.close();
-            try {
-                unregisterReceiver(receiver);
-            } catch (IllegalArgumentException e) {} // silent catch
         } catch (IOException e) {
             e.printStackTrace();
         }
