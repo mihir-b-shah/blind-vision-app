@@ -124,15 +124,16 @@ public class MainActivity extends AppCompatActivity {
                         conf = (SpellCheck.FloatVector)
                                 intent.getSerializableExtra("conf");
                         session2.setOutput(1, output, conf);
+                        Session combine = Session.combine(session, session2);
+                        combine.display();
                         next = new Intent(getApplicationContext(), Converge.class);
-                        next.putExtra(STRING_2, Session.combine(session, session2));
+                        next.putExtra(STRING_2, combine);
                         next.putExtra(STRING_1, spkText);
                         next.putExtra(INT_1, 10);
                         startService(next);
                         break;
                     case 10:
                         session = (Session) intent.getSerializableExtra("session");
-                        System.out.println(session);
                         break;
                     default:
                         System.err.println("Error code: " + code);

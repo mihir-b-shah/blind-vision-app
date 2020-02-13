@@ -312,6 +312,7 @@ public class SpellCheck extends IntentService {
     protected void onHandleIntent(Intent intent) {
         String[] data = intent.getStringArrayExtra(MainActivity.STRING_ARRAY_1);
         String input = join(data);
+        input = input.replaceAll("[^\\x00-\\x7F]+", "");
         TextRazor textRazor = new TextRazor(getString(R.string.textrazor_key));
         textRazor.setExtractors(Arrays.asList("spelling"));
 

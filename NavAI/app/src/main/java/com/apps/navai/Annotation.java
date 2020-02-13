@@ -1,5 +1,6 @@
 package com.apps.navai;
 
+import android.annotation.SuppressLint;
 import android.graphics.Rect;
 
 import com.google.android.gms.tasks.Task;
@@ -15,7 +16,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class Annotation implements Serializable,Comparable<Annotation> {
 
@@ -26,12 +26,17 @@ public class Annotation implements Serializable,Comparable<Annotation> {
     private float conf; // confidence
     private Rect rect; // bounding polygon
     private char tag; // tag
-    private transient double[] extra;
+    private double[] extra;
 
     public Annotation(FirebaseVisionObject obj) {
         tag = 'o';
         conf = 1f;
         rect = obj.getBoundingBox();
+    }
+
+    // pls remove
+    public double[] getExtra() {
+        return extra;
     }
 
     public void genDescription(final FirebaseVisionImage image) {
@@ -51,10 +56,12 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         }
 
         List<FirebaseVisionImageLabel> labels = task.getResult();
-        Stream<FirebaseVisionImageLabel> labelStream = labels.stream();
 
         extra = labels.stream().
                 mapToDouble(FirebaseVisionImageLabel::getConfidence).toArray();
+        if(extra == null) {
+            extra = new double[0];
+        }
         descr = SpellCheck.join(labels.stream().map(FirebaseVisionImageLabel::getText).
                 toArray(String[]::new));
         /*
@@ -120,9 +127,11 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         return Float.compare(e.getConfidence(), getConfidence());
     }
 
+    @SuppressLint("DefaultLocale")
     @Override
     public String toString() {
-        return descr;
+        return String.format("Type: %c, Description: %s, Conf: %f, Bounds: %f, %f",
+                tag, descr, conf, rect.exactCenterX(), rect.exactCenterY());
     }
 
     // makes serializing methods more efficient.
@@ -130,6 +139,14 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         out.writeChar(tag);
         out.writeUTF(descr == null ? "NULL" : descr);
         out.writeFloat(conf);
+        if(extra == null) {
+            out.writeInt(0);
+        } else {
+            out.writeInt(extra.length);
+            for(int i = 0; i<extra.length; ++i) {
+                out.writeDouble(extra[i]);
+            }
+        }
 
         if(rect != null) {
             out.writeInt(4);
@@ -145,6 +162,11 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         descr = in.readUTF();
         descr = descr.equals(NULL) ? null : descr;
         conf = in.readFloat();
+        int extraLIM = in.readInt();
+        extra = new double[extraLIM];
+        for(int i = 0; i<extra.length; ++i) {
+            extra[i] = in.readDouble();
+        }
         final int next = in.readInt();
         rect = next == 0 ? null : new Rect(in.readInt(), in.readInt(), in.readInt(), in.readInt());
     }

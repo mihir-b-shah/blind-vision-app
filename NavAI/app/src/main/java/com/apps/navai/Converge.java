@@ -41,6 +41,7 @@ public class Converge extends IntentService {
     }
 
     public void converge() {
+        session.sort((a1,a2)->a1.getRTag()-a2.getRTag());
         float[] scores = genScores(session, 0);
         Annotation[] a1 = convergeScores(0, scores);
         scores = genScores(session, 1);
@@ -109,6 +110,7 @@ public class Converge extends IntentService {
             con.setRequestProperty("Content-Type", "application/json");
             OutputStream os = con.getOutputStream();
             int ptr = 0;
+
             if(id == 0) {
                 while(ptr < session.sizeOne() &&
                         session.getAnnotationFirst(ptr).getRTag()==Annotation.OBJECT_TAG) {
@@ -145,12 +147,18 @@ public class Converge extends IntentService {
 
     // each session object a description tab-delimited.
     private String objString(Session session, int stop, int id) {
+        System.out.println("STOP VAL: " + stop);
         StringBuilder sb = new StringBuilder();
         if(id == 0) {
             sb.append(stop); sb.append('\t');
             for (int i = 0; i<stop; ++i) {
                 Annotation a = session.getAnnotationFirst(i);
-                numObjScores += a.getExtraCount();
+                if(a.getRTag() != Annotation.OBJECT_TAG) {
+                    --numObjects;
+                    continue;
+                }
+
+                numObjScores += a.getExtra().length;
                 sb.append(a.getExtraCount()); sb.append('\t');
                 sb.append(a.getDescription().toLowerCase().trim()); sb.append('\t');
             }
@@ -158,12 +166,12 @@ public class Converge extends IntentService {
             sb.append(stop); sb.append('\t');
             for (int i = 0; i<stop; ++i) {
                 Annotation a = session.getAnnotationSecond(i);
-                numTxtScores += 2;
-                sb.append(a.getDescription() == null ? "NULL" :
-                        a.getDescription().toLowerCase().trim()); sb.append('\t');
+                numObjScores += a.getExtraCount();
+                sb.append(a.getExtraCount()); sb.append('\t');
+                sb.append(a.getDescription().toLowerCase().trim()); sb.append('\t');
             }
         }
-        sb.deleteCharAt(sb.length()-1);
+        if(sb.length() > 0) sb.deleteCharAt(sb.length()-1);
         return sb.toString();
     }
 
@@ -179,13 +187,14 @@ public class Converge extends IntentService {
                 String orig = s.substring(0, tabIdx).toLowerCase().trim();
                 String corr = s.substring(tabIdx).toLowerCase().trim();
                 if(orig.indexOf(' ') != -1 && corr.indexOf(' ') == -1) {
-                    s = String.format("%s %s", orig, corr = SpellCheck.findSpaces(corr));
+                    s = String.format("%s\t%s", orig, corr = SpellCheck.findSpaces(corr));
                     String res;
                     if((res = SpellCheck.condenseSpaces(corr)).equals(corr)) {
-                        s = String.format("%s %s", orig, res);
+                        s = String.format("%s\t%s", orig, res);
                     }
                 }
-                sb.append(s);
+                sb.append(s.toLowerCase().trim());
+                numTxtScores += 2;
                 sb.append('\t');
             }
             SpellCheck.freeDict();

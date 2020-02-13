@@ -12,6 +12,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 
 public class Session implements java.io.Serializable {
     private Annotation[] annotationsOne;
@@ -63,6 +64,7 @@ public class Session implements java.io.Serializable {
         Bitmap bitmap = BitmapFactory.decodeFile(bitmapPath);
         int iter = 0;
         final Annotation[] annotations = index == 0 ? annotationsOne : annotationsTwo;
+        Arrays.sort(annotations, (a1,a2)->a1.getRTag()-a2.getRTag());
         while(iter < annotations.length && annotations[iter].getRTag()==Annotation.OBJECT_TAG) {
             System.out.println("Iter counter " + iter);
             final Rect rect = annotations[iter].getRect();
@@ -159,9 +161,21 @@ public class Session implements java.io.Serializable {
         srcFileTwo = srcFileTwo.equals(nullstr) ? null : srcFileTwo;
     }
 
-    @Override
-    public String toString() {
-        return String.format("Session data: %b %b", annotationsOne != null, annotationsTwo != null);
+    public void sort(Comparator<Annotation> comparator) {
+        Arrays.sort(annotationsOne, comparator);
+        Arrays.sort(annotationsTwo, comparator);
+    }
+
+    public void display() {
+        for(Annotation a: annotationsOne) {
+            System.out.println(a.toString());
+            System.out.println("Dbl data: " + Arrays.toString(a.getExtra()));
+        }
+        System.out.println("__________________________________");
+        for(Annotation a: annotationsTwo) {
+            System.out.println(a.toString());
+            System.out.println("Dbl data: " + Arrays.toString(a.getExtra()));
+        }
     }
 
     private void annotBuffer(Annotation ant, CharBuffer buffer) {
