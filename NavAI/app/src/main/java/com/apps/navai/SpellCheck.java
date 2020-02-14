@@ -338,6 +338,7 @@ public class SpellCheck extends IntentService {
                 for (int i = 0; i < size; ++i) {
                     sug = suggestions.get(i);
                     System.out.println(sug.getSuggestion());
+                    // Need to replace with exponential weighting function, W(x) = (e^x-e^L)/(1-e^L)
                     if (minDist > (currDist = sug.getScore() *
                             (1 - weightedEditDistance(curr, sug.getSuggestion()) / curr.length()))) {
                         minDist = currDist;
