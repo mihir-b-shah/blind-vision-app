@@ -395,12 +395,12 @@ public class SpellCheck extends IntentService {
      * @param three a delete arg
      * @return formatted minimum.
      */
-    private static int packMin(int one, int two, int three, double dist) {
+    private static int packMin(int one, int two, int three, double dist, double exp) {
         double v1 = collapse(one);
         double v2 = collapse(two);
         double v3 = collapse(three);
-        int bias = (int) (4 * dist + 1); // constrain on range 1,3.
-        if ((bias < 1 || bias > 3)) throw new AssertionError();
+
+        int bias = (int) (1 + 3*(Math.exp(dist)-exp)/(1-exp));
 
         if (v1 > v2) {
             if (v1 > v3) {
@@ -421,6 +421,7 @@ public class SpellCheck extends IntentService {
         int[][] dp = new int[2][1 + word1.length()];
         for (int i = 0; i < 1 + word1.length(); ++i)
             dp[0][i] = i << DELETE_MASK;
+        double exp1 = Math.exp(word1.length());
 
         for (int i = 1; i < 1 + word2.length(); ++i) {
             //print2DArray(dp, SpellCheck::collapse);
@@ -429,7 +430,7 @@ public class SpellCheck extends IntentService {
                     dp[1][j] = dp[0][j - 1];
                 } else {
                     dp[1][j] = packMin(dp[0][j - 1], dp[0][j], dp[1][j - 1],
-                            Math.min(j - 1, word1.length() - j) / word1.length());
+                            Math.min(j - 1, word1.length() - j), exp1);
                 }
             }
 
