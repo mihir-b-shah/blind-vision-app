@@ -179,14 +179,15 @@ public class CallAPI extends IntentService {
     }
 
     private void textRecognize(FirebaseVisionImage image) {
-
+        /*
         FirebaseVisionCloudTextRecognizerOptions options =
                 new FirebaseVisionCloudTextRecognizerOptions.Builder()
                         .setModelType(FirebaseVisionCloudTextRecognizerOptions.SPARSE_MODEL)
                         .build();
         detector = FirebaseVision.getInstance()
                 .getCloudTextRecognizer(options);
-        System.out.println("Before text detect register");
+        System.out.println("Before text detect register"); */
+        detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
         Task<FirebaseVisionText> result =
             detector.processImage(image)
                 .addOnSuccessListener(firebaseVisionText -> {

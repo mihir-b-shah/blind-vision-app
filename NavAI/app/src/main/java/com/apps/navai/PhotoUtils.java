@@ -7,12 +7,17 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.util.SizeF;
 
-import java.util.List;
-
 import static java.lang.Math.*;
 
 public class PhotoUtils {
     private static CameraManager manager;
+
+    private static final float K1 = 0.103827769f;
+    private static final float K2 = 0.905547841f;
+    private static final float P1 = -0.00389067972f;
+    private static final float P2 = -0.00469542985f;
+    private static final float K3 = -5.15973196f;
+
     private static float[][] rotMatrices;
     private static double[] cacheVertAngles;
     private static double[] cacheHorAngles;
@@ -35,10 +40,6 @@ public class PhotoUtils {
     private static void setup() {
         try {
             CameraCharacteristics props = manager.getCameraCharacteristics(getNormCamera());
-            List<CameraCharacteristics.Key<?>> keys = props.getKeys();
-            for(CameraCharacteristics.Key key: keys) {
-                System.out.println(key.getName());
-            }
             float[] focals = props.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS);
             focLength = focals[0];
             size = props.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE);
@@ -130,13 +131,35 @@ public class PhotoUtils {
         return atan(2*normHorizontal*tan(2*atan(size.getWidth()/focLength)));
     }
 
-    // may not get called on a majority of devices due to the lack of the key
-    // and design flaws for the device.
     private static void correct(Annotation annot) {
         try {
             final float[] K = manager.getCameraCharacteristics(getNormCamera())
                     .get(CameraCharacteristics.LENS_RADIAL_DISTORTION);
-            if(K == null) return;
+            System.out.println("K == null: " + (K==null));
+            if(K == null) {
+                // use the values computed by OpenCV
+                // this is specific to the current device testing
+                final Rect rect = annot.getRect();
+                final float halfWidth = CustomCamera.CAMERA_WIDTH >>> 1;
+                final float halfHeight = CustomCamera.CAMERA_HEIGHT >>> 1;
+
+                final float xCurr = (rect.exactCenterX()-halfWidth)/CustomCamera.CAMERA_WIDTH;
+                final float yCurr = (-rect.exactCenterY()+halfHeight)/CustomCamera.CAMERA_HEIGHT;
+
+                final float r2 = xCurr*xCurr+yCurr*yCurr;
+                final float rT = K1*r2+K2*r2*r2+K3*r2*r2*r2;
+                float dx = xCurr*rT + P1*(r2 + 2*xCurr*xCurr) + 2*P2*xCurr*yCurr;
+                float dy = yCurr*rT + P2*(r2 + 2*xCurr*yCurr) + 2*P1*xCurr*yCurr;
+
+                // dx is on the range [-0.5,0.5]
+                dx *= CustomCamera.CAMERA_WIDTH;
+                dy *= CustomCamera.CAMERA_HEIGHT;
+
+                rect.left += dx; rect.right += dx;
+                rect.bottom -= dy; rect.top -= dy;
+                return;
+            }
+
             final Rect rect = annot.getRect();
             final double x = rect.exactCenterX();
             final double y = rect.exactCenterY();

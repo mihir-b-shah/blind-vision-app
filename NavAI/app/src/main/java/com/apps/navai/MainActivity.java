@@ -166,17 +166,13 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
+        /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        if(first) startService(start);
+        if(first) startService(start); */
 
-        /*
-        Intent start = new Intent(getApplicationContext(), CustomCamera.class);
-        if(first) startActivityForResult(start, 0); */
-
-        /*
         Annotation annot1 = new Annotation('t', "Big cat", 0.97f,
                 new Rect(1159, 199, 1201, 201));
         Annotation annot2 = new Annotation('t', "Big cat", 0.71f,
@@ -185,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
         float[] rotMat2 = {1f,0f,0f,0f,1f,0f,0f,0f,1f};
         CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, annot1, annot2, rotMat1, rotMat2);
-        System.out.println(vect.getMgn() + " " + vect.getDir()); */
+        System.out.println(vect.getMgn() + " " + vect.getDir());
     }
 
     @Override

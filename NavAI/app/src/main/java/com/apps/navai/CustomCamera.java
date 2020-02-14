@@ -81,6 +81,7 @@ public class CustomCamera extends AppCompatActivity {
 
     private Handler handler;
     private HandlerThread backThread;
+    private boolean closed;
 
     private void capturePicture() {
         try {
@@ -252,12 +253,14 @@ public class CustomCamera extends AppCompatActivity {
         session.stopRepeating();
         session.abortCaptures();
         session.close();
+        closed = true;
         cameraDevice.close();
+
         System.out.println("EVERYTHING DONE END!");
     }
 
     private void finalClose() {
-        cameraDevice.close();
+        if(!closed) cameraDevice.close();
         cameraManager = null;
     }
 
@@ -401,8 +404,8 @@ public class CustomCamera extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        System.out.println("Bundle null: " + (savedInstanceState == null));
         super.onCreate(savedInstanceState);
+        System.out.println("Bundle null: " + (savedInstanceState == null));
         setContentView(R.layout.activity_custom_camera);
         // setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         notFirst = savedInstanceState != null && savedInstanceState.getBoolean("not-first");
@@ -444,6 +447,7 @@ public class CustomCamera extends AppCompatActivity {
             requestPermissions(new String[] {
                     android.Manifest.permission.CAMERA},REQUEST_CAMERA_RESULT);
         } else {
+            System.out.println("Before open!");
             openCamera();
         }
     }
@@ -483,6 +487,7 @@ public class CustomCamera extends AppCompatActivity {
             }, handler);
             cameraManager.openCamera(getRearCameraId(), deviceCallback, handler);
         } catch (CameraAccessException|SecurityException e) {
+            System.err.println(e.getMessage());
         }
     }
 }
