@@ -27,7 +27,7 @@ public class PhotoUtils {
      * In meters, the length of the arm on the stick.
      * Specific to the device AND this stick.
      */
-    private static final double PIVOT_RADIUS = 0.057;
+    private static final double PIVOT_RADIUS = 0.0575;
 
     private static float focLength;
     private static SizeF size;
@@ -73,6 +73,11 @@ public class PhotoUtils {
         }
         double zCosine() {return acos(z/sqrt(x*x+y*y+z*z));}
         double horizAngle() {return x/sqrt(x*x+y*y+z*z);}
+
+        @Override
+        public String toString() {
+            return String.format("<%.3f, %.3f, %.3f>", x, y, z);
+        }
     }
 
     public static PolarVector calcTrajectory(CameraManager manager, float fd1, float fd2,
@@ -96,6 +101,8 @@ public class PhotoUtils {
         final DirVector v2 = getLocationVector(1,
                 0.5 - a2.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
                 -0.5 + centerX/CustomCamera.CAMERA_WIDTH);
+        System.out.println(v1);
+        System.out.println(v2);
 
         final DirVector pv1 = getLocationVector(0, 0, 0);
         final DirVector pv2 = getLocationVector(1, 0, 0);
@@ -116,9 +123,9 @@ public class PhotoUtils {
         cacheHorAngles[index] = alpha;
         float[] rotMatrix = rotMatrices[index];
         double x = sin(theta); double y = -cos(theta)*sin(alpha); double z = -cos(theta)*cos(alpha);
-        return new DirVector(x*rotMatrix[0]+y*rotMatrix[3]+z*rotMatrix[6],
-                             x*rotMatrix[1]+y*rotMatrix[4]+z*rotMatrix[7],
-                             x*rotMatrix[2]+y*rotMatrix[5]+z*rotMatrix[8]);
+        return new DirVector(x*rotMatrix[0]+y*rotMatrix[1]+z*rotMatrix[2],
+                             x*rotMatrix[3]+y*rotMatrix[4]+z*rotMatrix[5],
+                             x*rotMatrix[6]+y*rotMatrix[7]+z*rotMatrix[8]);
     }
 
     /**

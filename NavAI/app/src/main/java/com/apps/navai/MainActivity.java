@@ -180,20 +180,25 @@ public class MainActivity extends AppCompatActivity {
         if(first) startService(start); */
 
         Annotation annot1 = new Annotation('t', "Big cat", 0.97f,
-                new Rect(1430, 647, 1432, 649));
+                new Rect(894, 457, 895, 459));
         Annotation annot2 = new Annotation('t', "Big cat", 0.71f,
-                new Rect(1473, 968, 1474, 969));
-        float[] rotMat1 = {0.14459842f, -0.8267648f, -0.5436463f,
-                           0.29042345f, 0.56068337f, -0.7754279f,
-                           0.94590986f, -0.045761984f, 0.32118583f};
-        float[] rotMat2 = {0.043594174f, -0.8530264f, -0.5200438f,
-                           0.11694036f, 0.5213173f, -0.8453125f,
-                           0.99218166f, -0.0239634f, 0.1224796f};
-        float fd1 = 0.0f;
+                new Rect(889, 690, 891, 691));
+        float[] rotMat1 = {0.07056068f, 0.045109104f, -0.996487f,
+                           0.0020612627f, 0.99896824f, 0.045367382f,
+                           0.99750537f, -0.0052551744f, 0.07039489f};
+        float[] rotMat2 = {-0.09723142f, 0.004867336f, -0.9952499f,
+                           -0.031096f, 0.99948496f, 0.007925986f,
+                            0.9947759f, 0.031718943f, -0.09702999f};
+        float fd1 = 0.5494943f;
         float fd2 = 0.5494943f;
         CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, fd1, fd2,
                 annot1, annot2, rotMat1, rotMat2);
+
+        /*
+        for this test data, I should get approximately 0.5 m as distance and close to 0 degrees
+        for the angle.
+         */
         System.out.println(vect.getMgn() + " " + vect.getDir());
     }
 
