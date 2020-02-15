@@ -21,6 +21,7 @@ public class PhotoUtils {
     private static float[][] rotMatrices;
     private static double[] cacheVertAngles;
     private static double[] cacheHorAngles;
+    private static float[] focusDistances;
 
     /**
      * In meters, the length of the arm on the stick.
@@ -35,6 +36,7 @@ public class PhotoUtils {
         rotMatrices = new float[2][];
         cacheVertAngles = new double[2];
         cacheHorAngles = new double[2];
+        focusDistances = new float[2];
     }
 
     private static void setup() {
@@ -73,10 +75,12 @@ public class PhotoUtils {
         double horizAngle() {return x/sqrt(x*x+y*y+z*z);}
     }
 
-    public static PolarVector calcTrajectory(CameraManager manager, Annotation a1, Annotation a2,
+    public static PolarVector calcTrajectory(CameraManager manager, float fd1, float fd2,
+                                             Annotation a1, Annotation a2,
                                              float[] rotMat1, float[] rotMat2) {
         PhotoUtils.manager = manager;
         rotMatrices[0] = rotMat1; rotMatrices[1] = rotMat2;
+        focusDistances[0] = fd1; focusDistances[1] = fd2;
         correct(a1); correct(a2);
         setup();
         PolarVector polarVector = calcTrajectory(a1, a2);
@@ -85,12 +89,13 @@ public class PhotoUtils {
     }
 
     private static PolarVector calcTrajectory(Annotation a1, Annotation a2) {
+        final float centerX = (a1.getRect().exactCenterX()+a2.getRect().exactCenterX())/2f;
         final DirVector v1 = getLocationVector(0,
                 0.5 - a1.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
-                -0.5 + a1.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH);
+                -0.5 + centerX/CustomCamera.CAMERA_WIDTH);
         final DirVector v2 = getLocationVector(1,
                 0.5 - a2.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
-                -0.5 + a1.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH);
+                -0.5 + centerX/CustomCamera.CAMERA_WIDTH);
 
         final DirVector pv1 = getLocationVector(0, 0, 0);
         final DirVector pv2 = getLocationVector(1, 0, 0);
@@ -105,9 +110,9 @@ public class PhotoUtils {
     }
 
     private static DirVector getLocationVector(int index, double normVertical, double normHorizontal) {
-        double theta = getVerticalAngle(normVertical);
+        double theta = getVerticalAngle(normVertical, focusDistances[index]);
         cacheVertAngles[index] = theta;
-        double alpha = getHorizontalAngle(normHorizontal);
+        double alpha = getHorizontalAngle(normHorizontal, focusDistances[index]);
         cacheHorAngles[index] = alpha;
         float[] rotMatrix = rotMatrices[index];
         double x = sin(theta); double y = -tan(alpha); double z = -cos(theta);
@@ -123,12 +128,12 @@ public class PhotoUtils {
      * @param normVertical the normalized vertical pixel component
      * @return get angle of elevation
      */
-    public static double getVerticalAngle(double normVertical) {
-        return atan(2*normVertical*tan(2*atan(size.getHeight()/focLength)));
+    private static double getVerticalAngle(double normVertical, double fd) {
+        return atan(normVertical*size.getHeight()/(focLength*(fd < 0 ? 1 : fd+1)));
     }
 
-    private static double getHorizontalAngle(double normHorizontal) {
-        return atan(2*normHorizontal*tan(2*atan(size.getWidth()/focLength)));
+    private static double getHorizontalAngle(double normHorizontal, double fd) {
+        return atan(normHorizontal*size.getWidth()/(focLength*(fd < 0 ? 1 : fd+1)));
     }
 
     private static void correct(Annotation annot) {

@@ -61,6 +61,8 @@ public class CustomCamera extends AppCompatActivity {
     private int state;
 
     private Queue<Image> images;
+    private Queue<Float> focusDistances;
+    private Float fd;
 
     private static final int VOLUME = 85;
     private static final int DURATION = 5000;
@@ -143,6 +145,7 @@ public class CustomCamera extends AppCompatActivity {
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
+                    focusDistances.offer(result.get(CaptureResult.LENS_FOCUS_DISTANCE));
                     if (result.getSequenceId() == QUEUE_SIZE) {
                         RunnableFuture<Void> imageSaver =
                                 new FutureTask<>(new ImageSaver(), null);
@@ -155,6 +158,7 @@ public class CustomCamera extends AppCompatActivity {
 
                         Intent next = new Intent();
                         next.putExtra("photo-path", mCurrentPhotoPath);
+                        next.putExtra("focus-distance", fd == null ? -1f : fd);
                         finalClose();
                         CustomCamera.this.setResult(Activity.RESULT_OK, next);
                         CustomCamera.this.finish();
@@ -260,7 +264,7 @@ public class CustomCamera extends AppCompatActivity {
     }
 
     private void finalClose() {
-        if(!closed) cameraDevice.close();
+        cameraDevice.close();
         cameraManager = null;
     }
 
@@ -330,19 +334,23 @@ public class CustomCamera extends AppCompatActivity {
         public void run() {
             File file = null;
             Image best = null;
+            Float focusDist = null;
             int size = 0;
             // could use a stream here...
             while(!images.isEmpty()) {
                 Image curr = images.poll();
+                Float fd = focusDistances.poll();
                 int currSize;
                 if((currSize = curr.getPlanes()[0].getBuffer().remaining()) > size) {
                     size = currSize;
                     best = curr;
+                    focusDist = fd;
                 } else {
                     curr.close();
                 }
             }
 
+            fd = focusDist;
             java.nio.ByteBuffer buffer = best.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[buffer.remaining()];
             buffer.get(bytes);
@@ -419,6 +427,7 @@ public class CustomCamera extends AppCompatActivity {
         } */
 
         images = new ArrayDeque<>(QUEUE_SIZE);
+        focusDistances = new ArrayDeque<>(QUEUE_SIZE);
 
         /*
         if(toneCtr == captureCtr && toneCtr == 0) {

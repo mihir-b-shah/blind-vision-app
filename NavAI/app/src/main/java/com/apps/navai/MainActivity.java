@@ -9,16 +9,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Rect;
-import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.os.Bundle;
-import android.provider.MediaStore;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 /*
 1. Should manage the main sequence UI.
@@ -57,6 +55,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean first = true;
     private float[] rotMat;
     private float[] rotMat2;
+    private float focusDist1;
+    private float focusDist2;
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -75,12 +75,14 @@ public class MainActivity extends AppCompatActivity {
                     case 3:
                         System.out.println("Arrived at case 3");
                         rotMat = intent.getFloatArrayExtra("rot-mat");
+                        System.out.println("ROTMAT: " + Arrays.toString(rotMat));
                         next = new Intent(getApplicationContext(), CustomCamera.class);
                         startActivityForResult(next, 4);
                         break;
                     case 5:
                         System.out.println("Arrived at case 5");
                         rotMat2 = intent.getFloatArrayExtra("rot-mat");
+                        System.out.println("ROTMAT: " + Arrays.toString(rotMat2));
                         next = new Intent(getApplicationContext(), CallAPI.class);
                         next.putExtra(STRING_1, mCurrentPhotoPath);
                         next.putExtra(STRING_2, "READFILE");
@@ -163,6 +165,8 @@ public class MainActivity extends AppCompatActivity {
         rotMat = st == null ? null : st.getFloatArray("rot-mat-1");
         rotMat2 = st == null ? null : st.getFloatArray("rot-mat-2");
         photoPath2 = st == null ? null : st.getString("photo-path-2");
+        focusDist1 = st == null ? -1f : st.getFloat("focus-dist-1", focusDist1);
+        focusDist2 = st == null ? -1f : st.getFloat("focus-dist-2", focusDist2);
 
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
@@ -175,13 +179,20 @@ public class MainActivity extends AppCompatActivity {
         if(first) startService(start); */
 
         Annotation annot1 = new Annotation('t', "Big cat", 0.97f,
-                new Rect(1159, 199, 1201, 201));
+                new Rect(1430, 647, 1432, 649));
         Annotation annot2 = new Annotation('t', "Big cat", 0.71f,
-                new Rect(1159, 399, 1201, 401));
-        float[] rotMat1 = {1f,0f,0f,0f,1f,0f,0f,0f,1f};
-        float[] rotMat2 = {1f,0f,0f,0f,1f,0f,0f,0f,1f};
+                new Rect(1473, 726, 1474, 727));
+        float[] rotMat1 = {0.14459842f, -0.8267648f, -0.5436463f,
+                           0.29042345f, 0.56068337f, -0.7754279f,
+                           0.94590986f, -0.045761984f, 0.32118583f};
+        float[] rotMat2 = {0.043594174f, -0.8530264f, -0.5200438f,
+                           0.11694036f, 0.5213173f, -0.8453125f,
+                           0.99218166f, -0.0239634f, 0.1224796f};
+        float fd1 = 0.0f;
+        float fd2 = 0.5494943f;
         CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, annot1, annot2, rotMat1, rotMat2);
+        PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, fd1, fd2,
+                annot1, annot2, rotMat1, rotMat2);
         System.out.println(vect.getMgn() + " " + vect.getDir());
     }
 
@@ -198,6 +209,8 @@ public class MainActivity extends AppCompatActivity {
         b.putString("photo-path-2", photoPath2);
         b.putFloatArray("rot-mat-1", rotMat);
         b.putFloatArray("rot-mat-2", rotMat2);
+        b.putFloat("focus-dist-1", focusDist1);
+        b.putFloat("focus-dist-2", focusDist2);
     }
 
     @Override
@@ -214,6 +227,8 @@ public class MainActivity extends AppCompatActivity {
                 case 2:
                     System.out.println("Arrived at case 2");
                     mCurrentPhotoPath = data.getStringExtra("photo-path");
+                    focusDist1 = data.getFloatExtra("focus-distance", -1f);
+                    System.out.println("FOCDIST1: " + focusDist1);
                     next = new Intent(getApplicationContext(), Calibrate.class);
                     next.putExtra(INT_1, 3);
                     startService(next);
@@ -221,6 +236,8 @@ public class MainActivity extends AppCompatActivity {
                 case 4:
                     System.out.println("Arrived at case 4");
                     photoPath2 = data.getStringExtra("photo-path");
+                    focusDist2 = data.getFloatExtra("focus-distance", -1f);
+                    System.out.println("FOCDIST1: " + focusDist2);
                     next = new Intent(getApplicationContext(), Calibrate.class);
                     next.putExtra(INT_1, 5);
                     startService(next);
