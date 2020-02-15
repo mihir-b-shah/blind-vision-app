@@ -102,7 +102,7 @@ public class PhotoUtils {
 
         double ang1 = v1.zCosine(); double ang2 = v2.zCosine();
 
-        double beta = Math.acos(DirVector.dot(pv1, pv2)/
+        double beta = acos(DirVector.dot(pv1, pv2)/
                 (DirVector.dot(pv1, pv1)*DirVector.dot(pv2, pv2)));
         double dist = (PIVOT_RADIUS*(cos(beta)-1)-PIVOT_RADIUS*sin(beta)/tan(ang2))/
                         (cos(ang1)-sin(ang1)/tan(ang2));
@@ -115,8 +115,7 @@ public class PhotoUtils {
         double alpha = getHorizontalAngle(normHorizontal, focusDistances[index]);
         cacheHorAngles[index] = alpha;
         float[] rotMatrix = rotMatrices[index];
-        double x = sin(theta); double y = -tan(alpha); double z = -cos(theta);
-
+        double x = sin(theta); double y = -cos(theta)*sin(alpha); double z = -cos(theta)*cos(alpha);
         return new DirVector(x*rotMatrix[0]+y*rotMatrix[3]+z*rotMatrix[6],
                              x*rotMatrix[1]+y*rotMatrix[4]+z*rotMatrix[7],
                              x*rotMatrix[2]+y*rotMatrix[5]+z*rotMatrix[8]);

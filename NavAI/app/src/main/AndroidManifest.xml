@@ -39,24 +39,26 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <service android:name=".CalibrateHelp"
+            android:enabled="true"
+            android:exported="false"/>
         <service
             android:name=".SpellCheck"
-            android:exported="false"></service>
+            android:exported="false" />
 
-        <activity android:name=".OCRDebug">
-            android:screenOrientation="landscape"
-        </activity>
-        <activity android:name=".Navigate">
-            android:screenOrientation="landscape"
-        </activity>
+        <activity android:name=".OCRDebug"
+            android:screenOrientation="landscape" />
+
+        <activity android:name=".Navigate"
+            android:screenOrientation="landscape"/>
 
         <service
             android:name=".ArduinoInterface"
             android:exported="false" />
 
-        <activity android:name=".CustomCamera">
-            android:screenOrientation="landscape"
-        </activity>
+        <activity android:name=".CustomCamera"
+            android:screenOrientation="landscape"/>
 
         <service
             android:name=".Converge"
@@ -69,7 +71,9 @@
             android:enabled="true"
             android:exported="true" />
 
-        <activity android:name=".WordInput" android:screenOrientation="landscape"/>
+        <activity
+            android:name=".WordInput"
+            android:screenOrientation="landscape" />
 
         <service
             android:name=".Speak"
@@ -90,7 +94,9 @@
             android:name="com.google.firebase.ml.vision.DEPENDENCIES"
             android:value="ocr,label" />
 
-        <activity android:name=".MainActivity" android:screenOrientation="landscape">
+        <activity
+            android:name=".MainActivity"
+            android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

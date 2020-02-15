@@ -142,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
                         System.err.println("Error code: " + code);
                         System.err.println("Process id not recognized.");
                         break;
+                    // need to add the CalibrateHelp stuff in here.
                 }
             }
         }
@@ -181,7 +182,7 @@ public class MainActivity extends AppCompatActivity {
         Annotation annot1 = new Annotation('t', "Big cat", 0.97f,
                 new Rect(1430, 647, 1432, 649));
         Annotation annot2 = new Annotation('t', "Big cat", 0.71f,
-                new Rect(1473, 726, 1474, 727));
+                new Rect(1473, 968, 1474, 969));
         float[] rotMat1 = {0.14459842f, -0.8267648f, -0.5436463f,
                            0.29042345f, 0.56068337f, -0.7754279f,
                            0.94590986f, -0.045761984f, 0.32118583f};
