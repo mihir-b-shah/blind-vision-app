@@ -173,10 +173,6 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
-        Intent start = new Intent(getApplicationContext(), Calibrate.class);
-        start.putExtra(INT_1, 4949);
-        if(first) startService(start);
-
         /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
@@ -184,24 +180,23 @@ public class MainActivity extends AppCompatActivity {
         start.putExtra(INT_1, 0);
         if(first) startService(start); */
 
-        /*
         Annotation annot1 = new Annotation('t', "Big cat", 0.97f,
-                new Rect(896, 530, 897, 531));
+                new Rect(744, 606, 745, 608));
         Annotation annot2 = new Annotation('t', "Big cat", 0.71f,
-                new Rect(950, 699, 951, 700));
-        float[] rotMat1 = {0.012981062f, -0.18898849f, -0.9818935f,
-                           -0.028603857f, 0.98150414f, -0.1892917f,
-                            0.99950653f, 0.03054315f, 0.0073351664f};
-        float[] rotMat2 = {-0.112036936f, 0.07103618f, -0.9911617f,
-                            0.016420938f, 0.99743766f, 0.06962982f,
-                            0.9935683f, -0.008474694f, -0.11291634f};
-        float fd1 = 0.0f;
+                new Rect(732, 812, 734, 813));
+        float[] rotMat1 = {-0.0021437095f, 0.014359797f, -0.99989355f,
+                           -0.039239366f, 0.9991256f, 0.014432924f,
+                            0.99922645f, 0.039266184f, -0.0015783906f};
+        float[] rotMat2 = {-0.13248293f, -0.017534465f, -0.9910277f,
+                           -0.0045371046f, 0.9998438f, -0.017083868f,
+                            0.99117243f, 0.0022330424f, -0.13254178f};
+        float fd1 = 0.5494943f;
         float fd2 = 0.5494943f;
         CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, fd1, fd2,
                 annot1, annot2, rotMat1, rotMat2);
 
-        System.out.println(vect.getMgn() + " " + vect.getDir()); */
+        System.out.println(vect.getMgn() + " " + vect.getDir());
     }
 
     @Override
