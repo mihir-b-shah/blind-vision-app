@@ -25,7 +25,7 @@ public class Calibrate extends Service implements SensorEventListener {
     private int ctr;
     private int id;
 
-    public static final float DIR_NOTEXIST = -100f;
+    private static final float AUSTIN_MAGNETIC_DEFLECTION = 0.06370452f;
 
     public Calibrate() {}
 
@@ -39,7 +39,7 @@ public class Calibrate extends Service implements SensorEventListener {
         id = intent.getIntExtra(INT_1, -1);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         sensors = new Sensor[2];
-        sensors[0] = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
+        sensors[0] = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         sensors[1] = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
         data = new float[2][3];
@@ -66,7 +66,7 @@ public class Calibrate extends Service implements SensorEventListener {
     public void onSensorChanged(SensorEvent sensorEvent) {
         int sensorType = sensorEvent.sensor.getType();
         switch (sensorType) {
-            case Sensor.TYPE_GRAVITY:
+            case Sensor.TYPE_ACCELEROMETER:
                 System.arraycopy(sensorEvent.values, 0, data[0], 0, data[0].length);
                 break;
             case Sensor.TYPE_MAGNETIC_FIELD:
@@ -83,6 +83,9 @@ public class Calibrate extends Service implements SensorEventListener {
         ++ctr;
         float[] rotationMatrix = new float[9];
         float[] inclination = new float[9];
+
+        proj(data[1], data[0]);
+        rotate(data[0], data[1], AUSTIN_MAGNETIC_DEFLECTION);
 
         boolean rotationOK = SensorManager.getRotationMatrix(rotationMatrix,
                 inclination, data[0], data[1]);
@@ -104,8 +107,32 @@ public class Calibrate extends Service implements SensorEventListener {
         }
     }
 
-    public float mgn(float[] v) {
-        return (float) Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+    // https://math.stackexchange.com/questions/1830695
+    private final void rotate(float[] g, float[] m, float alpha) {
+        float mgn = (float) Math.sqrt(dot(g,g));
+        float[] gxm = cross(g,m);
+        for(int i = 0; i<3; ++i) {
+            m[i] = (float) (m[i]*Math.cos(alpha)+gxm[i]*Math.sin(alpha)/mgn);
+        }
+    }
+
+    private final float[] cross(float[] a, float[] b) {
+        float[] v = new float[3];
+        v[0] = a[1]*b[2]-a[2]*b[1];
+        v[1] = a[2]*b[0]-b[2]*a[0];
+        v[2] = a[0]*b[1]-a[1]*b[0];
+        return v;
+    }
+
+    private final void proj(float[] m, float[] g) {
+        float scl = dot(m, g)/dot(g, g);
+        for(int i = 0; i<3; ++i) {
+            m[i] -= scl*g[i];
+        }
+    }
+
+    private final float dot(float[] v1, float[] v2) {
+        return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
     }
 
     public int getNumSamples() {
