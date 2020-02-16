@@ -39,8 +39,9 @@ public class Calibrate extends Service implements SensorEventListener {
         id = intent.getIntExtra(INT_1, -1);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         sensors = new Sensor[2];
-        sensors[0] = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        sensors[0] = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
         sensors[1] = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+
         data = new float[2][3];
         for(float[] dat: data) {
             Arrays.fill(dat, -1f);
@@ -65,7 +66,7 @@ public class Calibrate extends Service implements SensorEventListener {
     public void onSensorChanged(SensorEvent sensorEvent) {
         int sensorType = sensorEvent.sensor.getType();
         switch (sensorType) {
-            case Sensor.TYPE_ACCELEROMETER:
+            case Sensor.TYPE_GRAVITY:
                 System.arraycopy(sensorEvent.values, 0, data[0], 0, data[0].length);
                 break;
             case Sensor.TYPE_MAGNETIC_FIELD:
@@ -82,6 +83,7 @@ public class Calibrate extends Service implements SensorEventListener {
         ++ctr;
         float[] rotationMatrix = new float[9];
         float[] inclination = new float[9];
+
         boolean rotationOK = SensorManager.getRotationMatrix(rotationMatrix,
                 inclination, data[0], data[1]);
         if(!rotationOK) {
@@ -93,13 +95,17 @@ public class Calibrate extends Service implements SensorEventListener {
             mSensorManager.unregisterListener(this, sensors[0]);
             mSensorManager.unregisterListener(this, sensors[1]);
 
-            System.out.println("Got the rotation matrix!");
+            System.out.println("Got the rotation matrix: " + Arrays.toString(rotationMatrix));
             out.putExtra("rot-mat", rotationMatrix);
             out.putExtra(INT_1, id);
             LocalBroadcastManager.getInstance(getApplicationContext())
                     .sendBroadcast(out);
             stopSelf();
         }
+    }
+
+    public float mgn(float[] v) {
+        return (float) Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
     }
 
     public int getNumSamples() {

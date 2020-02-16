@@ -146,6 +146,7 @@ public class CustomCamera extends AppCompatActivity {
                                                @NonNull TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
                     focusDistances.offer(result.get(CaptureResult.LENS_FOCUS_DISTANCE));
+
                     if (result.getSequenceId() == QUEUE_SIZE) {
                         RunnableFuture<Void> imageSaver =
                                 new FutureTask<>(new ImageSaver(), null);

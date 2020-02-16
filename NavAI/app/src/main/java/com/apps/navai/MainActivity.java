@@ -83,13 +83,14 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println("Arrived at case 5");
                         rotMat2 = intent.getFloatArrayExtra("rot-mat");
                         System.out.println("ROTMAT: " + Arrays.toString(rotMat2));
+                        /*
                         next = new Intent(getApplicationContext(), CallAPI.class);
                         next.putExtra(STRING_1, mCurrentPhotoPath);
                         next.putExtra(STRING_2, "READFILE");
                         next.putExtra(STRING_3, (String) null);
                         next.putExtra(INT_1, 6);
                         next.putExtra(INT_2, 0);
-                        startService(next);
+                        startService(next); */
                         break;
                     case 6:
                         System.out.println("Arrived at case 6");
@@ -172,6 +173,10 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
+        Intent start = new Intent(getApplicationContext(), Calibrate.class);
+        start.putExtra(INT_1, 4949);
+        if(first) startService(start);
+
         /*
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
@@ -179,27 +184,24 @@ public class MainActivity extends AppCompatActivity {
         start.putExtra(INT_1, 0);
         if(first) startService(start); */
 
+        /*
         Annotation annot1 = new Annotation('t', "Big cat", 0.97f,
-                new Rect(894, 457, 895, 459));
+                new Rect(896, 530, 897, 531));
         Annotation annot2 = new Annotation('t', "Big cat", 0.71f,
-                new Rect(889, 690, 891, 691));
-        float[] rotMat1 = {0.07056068f, 0.045109104f, -0.996487f,
-                           0.0020612627f, 0.99896824f, 0.045367382f,
-                           0.99750537f, -0.0052551744f, 0.07039489f};
-        float[] rotMat2 = {-0.09723142f, 0.004867336f, -0.9952499f,
-                           -0.031096f, 0.99948496f, 0.007925986f,
-                            0.9947759f, 0.031718943f, -0.09702999f};
-        float fd1 = 0.5494943f;
+                new Rect(950, 699, 951, 700));
+        float[] rotMat1 = {0.012981062f, -0.18898849f, -0.9818935f,
+                           -0.028603857f, 0.98150414f, -0.1892917f,
+                            0.99950653f, 0.03054315f, 0.0073351664f};
+        float[] rotMat2 = {-0.112036936f, 0.07103618f, -0.9911617f,
+                            0.016420938f, 0.99743766f, 0.06962982f,
+                            0.9935683f, -0.008474694f, -0.11291634f};
+        float fd1 = 0.0f;
         float fd2 = 0.5494943f;
         CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, fd1, fd2,
                 annot1, annot2, rotMat1, rotMat2);
 
-        /*
-        for this test data, I should get approximately 0.5 m as distance and close to 0 degrees
-        for the angle.
-         */
-        System.out.println(vect.getMgn() + " " + vect.getDir());
+        System.out.println(vect.getMgn() + " " + vect.getDir()); */
     }
 
     @Override

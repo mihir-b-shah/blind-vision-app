@@ -94,13 +94,12 @@ public class PhotoUtils {
     }
 
     private static PolarVector calcTrajectory(Annotation a1, Annotation a2) {
-        final float centerX = (a1.getRect().exactCenterX()+a2.getRect().exactCenterX())/2f;
         final DirVector v1 = getLocationVector(0,
                 0.5 - a1.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
-                -0.5 + centerX/CustomCamera.CAMERA_WIDTH);
+                -0.5 + a1.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH);
         final DirVector v2 = getLocationVector(1,
                 0.5 - a2.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
-                -0.5 + centerX/CustomCamera.CAMERA_WIDTH);
+                -0.5 + a2.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH);
         System.out.println(v1);
         System.out.println(v2);
 

@@ -41,6 +41,6 @@ public class CalibrateHelp extends Calibrate {
 
     @Override
     public int getNumSamples() {
-        return 10;
+        return 2;
     }
 }
