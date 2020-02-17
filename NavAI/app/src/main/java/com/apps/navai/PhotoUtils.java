@@ -19,23 +19,19 @@ public class PhotoUtils {
     private static final float K3 = -5.15973196f;
 
     private static float[][] rotMatrices;
-    private static double[] cacheVertAngles;
-    private static double[] cacheHorAngles;
     private static float[] focusDistances;
+    private static float angleAvg;
 
     /**
      * In meters, the length of the arm on the stick.
      * Specific to the device AND this stick.
      */
-    private static final double PIVOT_RADIUS = 0.0575;
-
+    private static final double ROT_RADIUS = 0.0575;
     private static float focLength;
     private static SizeF size;
 
     static {
         rotMatrices = new float[2][];
-        cacheVertAngles = new double[2];
-        cacheHorAngles = new double[2];
         focusDistances = new float[2];
     }
 
@@ -62,24 +58,6 @@ public class PhotoUtils {
         public double getDir() {return dir;}
     }
 
-    private static class DirVector {
-        private final double x,y,z;
-        DirVector(double x, double y, double z) {
-            this.x = x; this.y = y; this.z = z;
-        }
-
-        static double dot(DirVector v1, DirVector v2) {
-            return v1.x*v2.x+v1.y*v2.y+v1.z*v2.z;
-        }
-        double zCosine() {return acos(z/sqrt(x*x+y*y+z*z));}
-        double horizAngle() {return x/sqrt(x*x+y*y+z*z);}
-
-        @Override
-        public String toString() {
-            return String.format("<%.3f, %.3f, %.3f>", x, y, z);
-        }
-    }
-
     public static PolarVector calcTrajectory(CameraManager manager, float fd1, float fd2,
                                              Annotation a1, Annotation a2,
                                              float[] rotMat1, float[] rotMat2) {
@@ -94,37 +72,26 @@ public class PhotoUtils {
     }
 
     private static PolarVector calcTrajectory(Annotation a1, Annotation a2) {
-        final DirVector v1 = getLocationVector(0,
+        final double Z1 = asin(getVerticalComp(0,
                 0.5 - a1.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
-                -0.5 + a1.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH);
-        final DirVector v2 = getLocationVector(1,
+                -0.5 + a1.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH));
+        final double Z2 = asin(getVerticalComp(1,
                 0.5 - a2.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
-                -0.5 + a2.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH);
-        System.out.println(v1);
-        System.out.println(v2);
-
-        final DirVector pv1 = getLocationVector(0, 0, 0);
-        final DirVector pv2 = getLocationVector(1, 0, 0);
-
-        double ang1 = v1.zCosine(); double ang2 = v2.zCosine();
-
-        double beta = acos(DirVector.dot(pv1, pv2)/
-                (DirVector.dot(pv1, pv1)*DirVector.dot(pv2, pv2)));
-        double dist = (PIVOT_RADIUS*(cos(beta)-1)-PIVOT_RADIUS*sin(beta)/tan(ang2))/
-                        (cos(ang1)-sin(ang1)/tan(ang2));
-        return new PolarVector(dist*cos(ang1), v1.horizAngle());
+                -0.5 + a2.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH));
+        final double B1 = asin(getVerticalComp(0, 0, 0));
+        final double B2 = asin(getVerticalComp(1, 0,0));
+        return new PolarVector(ROT_RADIUS*((sin(B2-Z2)-sin(B1-Z2))/sin(Z2-Z1)+cos(B1))*cos(B1),
+                angleAvg/2f);
     }
 
-    private static DirVector getLocationVector(int index, double normVertical, double normHorizontal) {
+    private static double getVerticalComp(int index, double normVertical, double normHorizontal) {
         double theta = getVerticalAngle(normVertical, focusDistances[index]);
-        cacheVertAngles[index] = theta;
         double alpha = getHorizontalAngle(normHorizontal, focusDistances[index]);
-        cacheHorAngles[index] = alpha;
+        angleAvg += alpha;
+
         float[] rotMatrix = rotMatrices[index];
         double x = sin(theta); double y = -cos(theta)*sin(alpha); double z = -cos(theta)*cos(alpha);
-        return new DirVector(x*rotMatrix[0]+y*rotMatrix[1]+z*rotMatrix[2],
-                             x*rotMatrix[3]+y*rotMatrix[4]+z*rotMatrix[5],
-                             x*rotMatrix[6]+y*rotMatrix[7]+z*rotMatrix[8]);
+        return x*rotMatrix[6]+y*rotMatrix[7]+z*rotMatrix[8];
     }
 
     /**
