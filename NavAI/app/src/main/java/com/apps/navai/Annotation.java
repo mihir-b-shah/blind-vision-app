@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 
 public class Annotation implements Serializable,Comparable<Annotation> {
@@ -26,7 +27,7 @@ public class Annotation implements Serializable,Comparable<Annotation> {
     private float conf; // confidence
     private Rect rect; // bounding polygon
     private char tag; // tag
-    private double[] extra;
+    double[] extra;
 
     public Annotation(FirebaseVisionObject obj) {
         tag = 'o';
@@ -62,13 +63,23 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         if(extra == null) {
             extra = new double[0];
         }
-        descr = SpellCheck.join(labels.stream().map(FirebaseVisionImageLabel::getText).
+        descr = join(labels.stream().map(FirebaseVisionImageLabel::getText).
                 toArray(String[]::new));
         /*
         NEEDS TO BE FIXED
 
         labels.get(0).getConfidence();
         conf *= labels.get(0).getConfidence(); */
+    }
+
+    public static String join(String[] data) {
+        StringBuilder sb = new StringBuilder();
+        for (String s : data) {
+            sb.append(s);
+            sb.append('\\'); sb.append('t');
+        }
+
+        return sb.toString().trim();
     }
 
     public Annotation(FirebaseVisionText.TextBlock p) {

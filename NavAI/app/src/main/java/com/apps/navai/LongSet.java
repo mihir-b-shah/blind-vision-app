@@ -23,7 +23,7 @@ public class LongSet {
         data[iter] = val;
     }
 
-    public boolean contains(long val) {
+    public boolean contains(final long val) {
         int iter = (int) adjustIndex(val);
         int skip = 0;
         while(data[iter] != 0L) {

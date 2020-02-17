@@ -47,6 +47,11 @@ public class ByteArray {
     public void clear() {
         final byte b = 0;
         Arrays.fill(buffer, b);
+        size = 0;
+    }
+
+    public boolean isEmpty() {
+        return size == 0 || buffer[size-1] == '\0';
     }
 
     public String limString(int lim) {

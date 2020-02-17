@@ -83,14 +83,13 @@ public class MainActivity extends AppCompatActivity {
                         System.out.println("Arrived at case 5");
                         rotMat2 = intent.getFloatArrayExtra("rot-mat");
                         System.out.println("ROTMAT: " + Arrays.toString(rotMat2));
-                        /*
                         next = new Intent(getApplicationContext(), CallAPI.class);
                         next.putExtra(STRING_1, mCurrentPhotoPath);
                         next.putExtra(STRING_2, "READFILE");
                         next.putExtra(STRING_3, (String) null);
                         next.putExtra(INT_1, 6);
                         next.putExtra(INT_2, 0);
-                        startService(next); */
+                        startService(next);
                         break;
                     case 6:
                         System.out.println("Arrived at case 6");
@@ -138,7 +137,17 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case 10:
                         session = (Session) intent.getSerializableExtra("session");
+                        Annotation frame1 = session.getAnnotationFirst(0);
+                        Annotation frame2 = session.getAnnotationSecond(0);
+
+                        CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+                        PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, focusDist1,
+                                focusDist2, frame1, frame2, rotMat, rotMat2);
+                        System.out.println(vect.getMgn() + " " + vect.getDir());
                         break;
+                    case 159:
+                        session = (Session) intent.getSerializableExtra("session");
+                        session.display();
                     default:
                         System.err.println("Error code: " + code);
                         System.err.println("Process id not recognized.");
@@ -180,23 +189,39 @@ public class MainActivity extends AppCompatActivity {
         start.putExtra(INT_1, 0);
         if(first) startService(start); */
 
-        Annotation annot1 = new Annotation('t', "Big cat", 0.97f,
-                new Rect(744, 606, 745, 608));
-        Annotation annot2 = new Annotation('t', "Big cat", 0.71f,
-                new Rect(732, 812, 734, 813));
-        float[] rotMat1 = {-0.0021437095f, 0.014359797f, -0.99989355f,
-                           -0.039239366f, 0.9991256f, 0.014432924f,
-                            0.99922645f, 0.039266184f, -0.0015783906f};
-        float[] rotMat2 = {-0.13248293f, -0.017534465f, -0.9910277f,
-                           -0.0045371046f, 0.9998438f, -0.017083868f,
-                            0.99117243f, 0.0022330424f, -0.13254178f};
-        float fd1 = 0.5494943f;
-        float fd2 = 0.5494943f;
-        CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-        PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, fd1, fd2,
-                annot1, annot2, rotMat1, rotMat2);
+        // Lets test converge
 
-        System.out.println(vect.getMgn() + " " + vect.getDir());
+        Annotation[] a1s = new Annotation[3];
+        a1s[0] = new Annotation('o', "book\\tbox\\tblue", 0.67f, new Rect(
+                0,0,0,0));
+        double[] dat1 = new double[3];
+        dat1[0] = 0.93; dat1[1] = 0.31; dat1[2] = 0.17;
+        a1s[0].extra = dat1;
+
+        a1s[1] = new Annotation('t', "Hacker\\tnull", 0.89f, new Rect(
+                0,0,0,0));
+        a1s[2] = new Annotation('t', "delight\\tnull", 0.94f, new Rect(
+                0,0,0,0));
+        Annotation[] a2s = new Annotation[4];
+        a2s[0] = new Annotation('o', "book\\tblack", 0.37f, new Rect(
+                0,0,0,0));
+        double[] dat2 = new double[3];
+        dat2[0] = 0.87; dat1[1] = 0.23; dat1[2] = 0.09;
+        a1s[0].extra = dat2;
+
+        a2s[1] = new Annotation('t', "Hacker\\tnull", 0.75f, new Rect(
+                0,0,0,0));
+        a2s[2] = new Annotation('t', "delight\\tnull", 0.51f, new Rect(
+                0,0,0,0));
+        a2s[3] = new Annotation('t', "Warren\\tnull", 0.44f, new Rect(
+                0,0,0,0));
+
+        Session s = new Session(a1s, a2s, "", "", "", "");
+        Intent start = new Intent(getApplicationContext(), Converge.class);
+        start.putExtra(STRING_2, s);
+        start.putExtra(STRING_1, "hacker");
+        start.putExtra(INT_1, 159);
+        startService(start);
     }
 
     @Override

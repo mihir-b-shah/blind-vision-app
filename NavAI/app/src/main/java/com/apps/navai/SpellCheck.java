@@ -46,7 +46,7 @@ public class SpellCheck extends IntentService {
         dictionary = new LongSet(8191);
         try {
             File folder = context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS);
-            final String filename = folder.getAbsolutePath()+'/'+"hashdict.txt";
+            final String filename = folder.getAbsolutePath()+"/hashdict.txt";
             BufferedReader br = new BufferedReader(new FileReader(filename));
             String line;
             while((line = br.readLine()) != null) {
@@ -374,7 +374,7 @@ public class SpellCheck extends IntentService {
         for (String s : data) {
             flag = true;
             sb.append(s);
-            sb.append('\t');
+            sb.append('\\'); sb.append('\t');
         }
         if(flag) {
             sb.deleteCharAt(sb.length() - 1);
