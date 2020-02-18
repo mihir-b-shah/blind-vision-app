@@ -7,6 +7,11 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.util.SizeF;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+
 import static java.lang.Math.*;
 
 public class PhotoUtils {
@@ -46,9 +51,9 @@ public class PhotoUtils {
         }
     }
 
-    public static class PolarVector {
-        private final double mgn;
-        private final double dir;
+    public static class PolarVector implements Serializable {
+        private double mgn;
+        private double dir;
 
         PolarVector(double mgn, double dir) {
             this.mgn = mgn; this.dir = dir;
@@ -56,6 +61,24 @@ public class PhotoUtils {
 
         public double getMgn() {return mgn;}
         public double getDir() {return dir;}
+
+        public void writeObject(ObjectOutputStream oos) {
+            try {
+                oos.writeDouble(mgn);
+                oos.writeDouble(dir);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void readObject(ObjectInputStream ois) {
+            try {
+                mgn = ois.readDouble();
+                dir = ois.readDouble();
+            } catch (IOException e) {
+
+            }
+        }
     }
 
     public static PolarVector calcTrajectory(CameraManager manager, float fd1, float fd2,
@@ -67,7 +90,7 @@ public class PhotoUtils {
         correct(a1); correct(a2);
         setup();
         PolarVector polarVector = calcTrajectory(a1, a2);
-        manager = null;
+        PhotoUtils.manager = null;
         return polarVector;
     }
 

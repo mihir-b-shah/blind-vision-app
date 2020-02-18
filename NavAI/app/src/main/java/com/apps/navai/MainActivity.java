@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String STRING_1;
     public static final String STRING_2;
     public static final String STRING_3;
+    public static final String VECTOR_1;
     public static final String STRING_ARRAY_1;
     public static final String SERVICE_RESPONSE;
     public static final String INT_1;
@@ -39,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
         STRING_1 = "string1_8941930";
         STRING_2 = "string2_1210210";
         STRING_3 = "string3_6795899";
+        VECTOR_1 = "vector1_0430440";
         STRING_ARRAY_1 = "string_array1_54059495";
         SERVICE_RESPONSE = "stringG1_32932093";
         INT_1 = "int1_4390403";
@@ -143,11 +145,9 @@ public class MainActivity extends AppCompatActivity {
                         CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
                         PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, focusDist1,
                                 focusDist2, frame1, frame2, rotMat, rotMat2);
-                        System.out.println(vect.getMgn() + " " + vect.getDir());
-                        break;
-                    case 159:
-                        session = (Session) intent.getSerializableExtra("session");
-                        session.display();
+                        next = new Intent(getApplicationContext(), Navigate.class);
+                        next.putExtra(VECTOR_1, vect);
+                        startActivityForResult(next, 11);
                         break;
                     default:
                         System.err.println("Error code: " + code);
@@ -183,15 +183,17 @@ public class MainActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
-        /*
+        Intent arduino = new Intent(getApplicationContext(), ArduinoInterface.class);
+        arduino.putExtra(INT_1, 12);
+        if(first) startService(arduino);
+
         Intent start = new Intent(getApplicationContext(), Speak.class);
         start.putExtra(STRING_1, "Hello welcome to my assisted navigation app. What " +
                 "are you looking for?");
         start.putExtra(INT_1, 0);
-        if(first) startService(start); */
+        if(first) startService(start);
 
-        // Lets test converge
-
+        /*
         Annotation[] a1s = new Annotation[3];
         a1s[0] = new Annotation('o', "book\\tbox\\tblue", 0.67f, new Rect(
                 0,0,0,0));
@@ -223,6 +225,7 @@ public class MainActivity extends AppCompatActivity {
         start.putExtra(STRING_1, "hacker");
         start.putExtra(INT_1, 159);
         startService(start);
+        */
     }
 
     @Override
@@ -270,6 +273,9 @@ public class MainActivity extends AppCompatActivity {
                     next = new Intent(getApplicationContext(), Calibrate.class);
                     next.putExtra(INT_1, 5);
                     startService(next);
+                    break;
+                case 11:
+                    System.out.println("Program done!");
                     break;
                 default:
                     System.err.println("Code not recognized.");
