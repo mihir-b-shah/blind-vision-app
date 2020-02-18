@@ -17,6 +17,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
+import java.util.StringTokenizer;
 
 public class Annotation implements Serializable,Comparable<Annotation> {
 
@@ -116,6 +117,12 @@ public class Annotation implements Serializable,Comparable<Annotation> {
 
     public void multConf(float conf) {this.conf *= conf;}
 
+    public void multConfDecide(float conf, boolean first) {
+        this.conf *= conf;
+        descr = first ? descr.substring(0, descr.indexOf("\\t")) :
+                descr.substring(descr.indexOf("\\t")+2);
+    }
+
     public Rect getRect() {
         return rect;
     }
@@ -126,9 +133,26 @@ public class Annotation implements Serializable,Comparable<Annotation> {
 
     public void dotScores(float[] vals, int s, int e) {
         float score = 0;
+        double optScore = 0f;
+        double locScore;
+        int optIndex = 0;
         for(int i = s; i<e; ++i) {
+            locScore = extra[i-s]*vals[i];
+            if(optScore < locScore) {
+                optScore = locScore;
+                optIndex = i-s;
+            }
             score += extra[i-s]*vals[i];
         }
+
+        StringTokenizer tokenizer = new StringTokenizer(descr, "\\t");
+        int ctr = 0;
+        while(ctr < optIndex && tokenizer.hasMoreTokens()) {
+            tokenizer.nextToken();
+            ++ctr;
+        }
+
+        descr = tokenizer.nextToken();
         score /= (e-s);
         conf *= score;
     }

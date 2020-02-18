@@ -42,7 +42,7 @@ public class Converge extends IntentService {
     }
 
     public void converge() {
-        session.sort((a1,a2)->a1.getRTag()-a2.getRTag());
+        session.sortReg((a1,a2)->a1.getRTag()-a2.getRTag());
         float[] scores = genScores(session, 0);
         Annotation[] a1 = convergeScores(0, scores);
         scores = genScores(session, 1);
@@ -64,14 +64,16 @@ public class Converge extends IntentService {
         for(int i = numObjects; i<(id == 0 ? session.sizeOne() : session.sizeTwo()); ++i) {
             Annotation annotation = id == 0 ?
                     session.getAnnotationFirst(i) : session.getAnnotationSecond(i);
-            if(Math.abs(f[ptr+1] - 1_000_000_000) < 0.01) {
-                annotation.multConf(f[ptr]);
+            if(Math.abs(f[ptr+1] - 1_000_000_000) < 0.01 || f[ptr] >= f[ptr+1]) {
+                annotation.multConfDecide(f[ptr], true);
             } else {
-                annotation.multConf(Math.max(f[ptr], f[ptr+1]));
+                annotation.multConfDecide(f[ptr+1], false);
             }
             ptr += 2;
         }
 
+        System.out.println("SESSION DONE!");
+        session.display();
         PriorityQueue<Annotation> pq = new PriorityQueue<>();
         System.out.println(Arrays.toString(f));
         if(id == 0) {
@@ -85,7 +87,7 @@ public class Converge extends IntentService {
                 pq.offer(session.getAnnotationSecond(i));
             }
         }
-        
+
         Annotation[] result = new Annotation[NUM_ANNOT];
         if(NUM_ANNOT > pq.size()) {
             Converge.this.stopSelf();

@@ -161,9 +161,13 @@ public class Session implements java.io.Serializable {
         srcFileTwo = srcFileTwo.equals(nullstr) ? null : srcFileTwo;
     }
 
-    public void sort(Comparator<Annotation> comparator) {
+    public void sortReg(Comparator<Annotation> comparator) {
         Arrays.sort(annotationsOne, comparator);
         Arrays.sort(annotationsTwo, comparator);
+        for(Annotation a: annotationsOne)
+            a.updateDescr(a.getDescription().toLowerCase());
+        for(Annotation a: annotationsTwo)
+            a.updateDescr(a.getDescription().toLowerCase());
     }
 
     public void display() {

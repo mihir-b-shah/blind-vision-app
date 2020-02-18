@@ -207,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
                 0,0,0,0));
         double[] dat2 = new double[3];
         dat2[0] = 0.87; dat1[1] = 0.23; dat1[2] = 0.09;
-        a1s[0].extra = dat2;
+        a2s[0].extra = dat2;
 
         a2s[1] = new Annotation('t', "Hacker\\tnull", 0.75f, new Rect(
                 0,0,0,0));
