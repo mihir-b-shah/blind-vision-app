@@ -148,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
                     case 159:
                         session = (Session) intent.getSerializableExtra("session");
                         session.display();
+                        break;
                     default:
                         System.err.println("Error code: " + code);
                         System.err.println("Process id not recognized.");
