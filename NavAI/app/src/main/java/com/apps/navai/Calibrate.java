@@ -77,38 +77,10 @@ public class Calibrate extends Service implements SensorEventListener {
         }
     }
 
-    private final void matVectMult(float[] vect, float[] mat) {
-        float[] newvect = new float[3];
-        for(int i = 0; i<vect.length; ++i) {
-            for(int j = 0; j<vect.length; ++j) {
-                newvect[i] += mat[vect.length*i+j]*vect[j];
-            }
-        }
-        System.arraycopy(newvect, 0, vect, 0, vect.length);
-    }
-
-    private final float dot(float[] v1, float[] v2) {
-        return v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
-    }
-
     public int getNumSamples() {
         return 2;
     }
 
-    private boolean nullCheck(float[] array) {
-        for(int i = 0; i<array.length; ++i) {
-            if(Float.compare(array[i], -1f) != 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {}
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-    }
 }

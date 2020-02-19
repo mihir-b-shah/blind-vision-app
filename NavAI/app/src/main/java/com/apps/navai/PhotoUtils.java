@@ -79,6 +79,10 @@ public class PhotoUtils {
 
             }
         }
+
+        public void updateDir(double v) {
+            dir = v;
+        }
     }
 
     public static PolarVector calcTrajectory(CameraManager manager, float fd1, float fd2,
@@ -117,12 +121,6 @@ public class PhotoUtils {
         return x*rotMatrix[6]+y*rotMatrix[7]+z*rotMatrix[8];
     }
 
-    /**
-     * call only after setup()
-     *
-     * @param normVertical the normalized vertical pixel component
-     * @return get angle of elevation
-     */
     private static double getVerticalAngle(double normVertical, double fd) {
         return atan(normVertical*size.getHeight()/(focLength*(fd < 0 ? 1 : fd+1)));
     }
@@ -170,7 +168,6 @@ public class PhotoUtils {
                 rpow *= r*r;
                 f1 += K[i]*rpow;
             }
-
             final double f2 = 2*x*y;
             final double dx = x*(f1+K[3]*f2+K[4]*(rsq+2*x*x)-1);
             double dy = y*(f1+K[4]*f2+K[3]*(rsq+2*y*y)-1);

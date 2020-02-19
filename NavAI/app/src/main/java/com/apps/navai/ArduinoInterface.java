@@ -16,17 +16,16 @@ public class ArduinoInterface extends IntentService implements DataStream.SpeedL
     public static final String MESSAGE_DONE = "message_done030";
     public static final String MESSAGE_CHANGE = "message_chg3902";
 
+    public static final String DIR_X = "dirx_40394011";
+    public static final String DIR_Y = "diry_90697069";
+
     private Physicaloid phy;
     private final ByteArray buf;
     private final DataStream stream;
 
-    // computed as cos/sin of 2*pi*wheel_radius/walker_diameter
-    // nonsense values
-    private static final double WHEEL_RADIUS = 0.41;
-    private static final double WALKER_DIAMETER = 1.02;
-
-    private static int cA;
-    private static int cB;
+    // meters
+    private static final double WHEEL_RADIUS = 0.064;
+    private static final double WALKER_DIAMETER = 0.445;
 
     class CartVector {
         private double x;
@@ -35,44 +34,45 @@ public class ArduinoInterface extends IntentService implements DataStream.SpeedL
         public CartVector(double x, double y) {
             this.x = x; this.y = y;
         }
-
-        public void straightWalk(double dist) {
-            final double mgn = Math.sqrt(x*x+y*y);
-            x += x*dist/mgn;
-            y += y*dist/mgn;
-        }
     }
 
-    private final CartVector vector;
+    private final CartVector displ;
+    private final CartVector dir;
+
+    private double velocity1;
+    private double velocity2;
+    private double time1;
+    private double time2;
 
     @Override
     public void speedChanged(int id, double time) {
-        switch(id) {
-            case 0:
-                ++cA;
-                break;
-            case 1:
-                ++cB;
-                break;
-            default:
-                System.err.printf("Error, %d is not valid wheel id.%n", id);
-        }
-        int decr = Math.min(cA, cB);
-        cA -= decr; cB -= decr;
-        vector.straightWalk(decr*Math.PI*WHEEL_RADIUS);
+        double w = Math.PI/time;
+        double interval;
 
-        double xAdj,yAdj;
-        if(cA > 0) {
-            xAdj = WALKER_DIAMETER/2*(1-Math.cos(cA*Math.PI*WHEEL_RADIUS/WALKER_DIAMETER));
-            yAdj = WALKER_DIAMETER/2*Math.sin(cA*Math.PI*WHEEL_RADIUS/WALKER_DIAMETER);
+        if (id == 0) {
+            velocity1 = w*WHEEL_RADIUS;
+            time1 += time;
+            interval = time1-time2;
         } else {
-            xAdj = -WALKER_DIAMETER/2*(1-Math.cos(cB*Math.PI*WHEEL_RADIUS/WALKER_DIAMETER));
-            yAdj = WALKER_DIAMETER/2*Math.sin(cB*Math.PI*WHEEL_RADIUS/WALKER_DIAMETER);
+            velocity2 = w*WHEEL_RADIUS;
+            time2 += time;
+            interval = time2-time1;
         }
+
+        double mgn = interval*(velocity1+velocity2)/2;
+        displ.x += mgn*dir.x;
+        displ.y += mgn*dir.y;
+
+        double angRot = interval*(velocity2-velocity1)/WALKER_DIAMETER;
+        final double cosAR = Math.cos(angRot); final double sinAR = Math.sin(angRot);
+        dir.x = cosAR*dir.x + sinAR*dir.y;
+        dir.y = -sinAR*dir.x + cosAR*dir.y;
 
         Intent intent = new Intent(Navigate.XY_FILTER);
-        intent.putExtra("X", vector.x+xAdj);
-        intent.putExtra("Y", vector.y+yAdj);
+        intent.putExtra("X", displ.x);
+        intent.putExtra("Y", displ.y);
+        intent.putExtra(DIR_X, dir.x);
+        intent.putExtra(DIR_Y, dir.y);
         sendBroadcast(intent);
     }
 
@@ -101,7 +101,8 @@ public class ArduinoInterface extends IntentService implements DataStream.SpeedL
         super("ArduinoInterface");
         stream = new DataStream(0.99f, this); // set
         buf = new ByteArray(12); // grows by expand()
-        vector = new CartVector(0,0);
+        displ = new CartVector(0,0);
+        dir = new CartVector(0, 1);
     }
 
     @Override

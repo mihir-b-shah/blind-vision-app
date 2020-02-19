@@ -12,10 +12,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.function.LongBinaryOperator;
 
 import static com.apps.navai.MainActivity.INT_1;
 import static com.apps.navai.MainActivity.STRING_1;
@@ -238,9 +236,6 @@ public class Converge extends IntentService {
             numObjects = ptr;
             String str = String.format("{\"qs\":\"%s\", \"obj\":\"%s\", \"txt\":\"%s\"}",
                     keyword, objString(session, ptr, id), txtString(session, ptr, id));
-            /*
-            String str = "{\"qs\":\"candidate\", \"obj\":\"3\\t3\\tpolitics\\tflag\\tdemocrat\", " +
-                    "\"txt\":\"2\\tnext door\\tnull\\tcandidate\\tnull\"}"; */
             byte[] write = str.getBytes(StandardCharsets.UTF_8);
             os.write(write);
             os.flush();

@@ -4,7 +4,6 @@ from gensim.test.utils import common_texts, get_tmpfile
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from gensim.models import KeyedVectors
 import numpy
-from sys import stderr
 
 model = None
 word_vectors = None
@@ -37,11 +36,8 @@ def phrasesim(s1,s2):
 
     if(len(v1) == 0 or len(v2) == 0):
         return 0
-
-    dot = numpy.dot(v1,v2)
-    m1 = numpy.dot(v1,v1)
-    m2 = numpy.dot(v2,v2)
-    return 0.5+0.5*(dot/(m1*m2)**0.5)
+		
+    return 0.5+0.5*(numpy.dot(v1,v2)/(numpy.dot(v1,v1)*numpy.dot(v2,v2))**0.5)
 
 def wordsim(s1,s2):
     if(s2 == 'null'):
@@ -61,11 +57,7 @@ def wordsim(s1,s2):
 
     if(len(v1) == 0 or len(v2) == 0):
         return 0
-
-    dot = numpy.dot(v1,v2)
-    m1 = numpy.dot(v1,v1)
-    m2 = numpy.dot(v2,v2)
-    return 0.5+0.5*(dot/(m1*m2)**0.5)
+	return 0.5+0.5*(numpy.dot(v1,v2)/(numpy.dot(v1,v1)*numpy.dot(v2,v2))**0.5)
 
 def is_phrase(s):
     return s.strip().find(' ') != -1
@@ -73,8 +65,6 @@ def is_phrase(s):
 @app.route('/matrix', methods = ['POST'])
 def gen_matrix():
     init()
-    print("got to matrix!", file=stderr)
-    print(str(request.data), file=stderr)
     data = request.get_json()
     frame1 = data['one'].split('\t')
     frame2 = data['two'].split('\t')
@@ -86,17 +76,12 @@ def gen_matrix():
                 data.append(phrasesim(word1, word2))
             else:
                 data.append(wordsim(word1, word2))
-
-    print(str(data), file=stderr)
     return str(data)
 
 @app.route('/', methods = ['POST'])
 def gen_ss():
-    print("starting raaring!", file=stderr)
     init()
-    print(str(request.data), file=stderr)
     word_data = request.get_json()
-    print("is it json...", file=stderr)
     query_string = word_data['qs']
     objstring = word_data['obj'].split('\t')
     txtstring = word_data['txt'].split('\t')
@@ -108,7 +93,6 @@ def gen_ss():
     txtscores = []
 
     ptr = 1
-    print(str(objstring), file=stderr)
     while(ptr < obj_ct+1):
         inner_ct = int(objstring[ptr])
         inpin = []
@@ -118,13 +102,11 @@ def gen_ss():
                 inpin.append(phrasesim(query_string, objstring[inner_ptr]))
             else:
                 inpin.append(wordsim(query_string, objstring[inner_ptr]))
-            print(str(objstring[inner_ptr]), file=stderr)
             inner_ptr += 1
         ptr = inner_ptr
         objscores.append(inpin)
 
     ptr = 1
-    print(str(txtstring), file=stderr)
     while(ptr < 2*txt_ct+1):
         inpin = []
         orig = txtstring[ptr]
@@ -138,16 +120,12 @@ def gen_ss():
             inpin.append(phrasesim(query_string, corr))
         else:
             inpin.append(wordsim(query_string, corr))
-        print(str(orig), file=stderr)
-        print(str(corr), file=stderr)
         txtscores.append(inpin)
 
     output = []
     output.append(objscores)
     output.append(txtscores)
-    res = str(output)
-    print(res, file=stderr)
-    return res
+    return str(output)
 
 if __name__ == '__main__':
     app.run()

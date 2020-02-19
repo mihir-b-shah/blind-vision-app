@@ -1,10 +1,7 @@
 package com.apps.navai;
 
 import android.app.IntentService;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
@@ -42,10 +39,8 @@ import static com.apps.navai.MainActivity.SERVICE_RESPONSE;
 import static com.apps.navai.MainActivity.STRING_1;
 import static com.apps.navai.MainActivity.STRING_2;
 import static com.apps.navai.MainActivity.STRING_3;
-import static com.apps.navai.MainActivity.STRING_ARRAY_1;
 
 public class CallAPI extends IntentService {
-    public static final String CALLAPI_RESPONSE = "resp_49309430943";
     private List<FirebaseVisionObject> recObjects;
     private FirebaseVisionText recText;
     private Session session;
@@ -179,15 +174,13 @@ public class CallAPI extends IntentService {
     }
 
     private void textRecognize(FirebaseVisionImage image) {
-        /*
         FirebaseVisionCloudTextRecognizerOptions options =
                 new FirebaseVisionCloudTextRecognizerOptions.Builder()
                         .setModelType(FirebaseVisionCloudTextRecognizerOptions.SPARSE_MODEL)
                         .build();
         detector = FirebaseVision.getInstance()
                 .getCloudTextRecognizer(options);
-        System.out.println("Before text detect register"); */
-        detector = FirebaseVision.getInstance().getOnDeviceTextRecognizer();
+
         Task<FirebaseVisionText> result =
             detector.processImage(image)
                 .addOnSuccessListener(firebaseVisionText -> {

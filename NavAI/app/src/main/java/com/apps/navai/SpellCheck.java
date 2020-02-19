@@ -248,14 +248,6 @@ public class SpellCheck extends IntentService {
         return hash;
     }
 
-    private static final long hash(String str, int s, int e) {
-        long hash = 0;
-        for(int i = 0; i<e-s; ++i) {
-            hash += str.charAt(i+s)-96L << 5*i;
-        }
-        return hash;
-    }
-
     class FloatVector implements Serializable {
         private float[] data;
         private int ptr;
@@ -444,31 +436,42 @@ public class SpellCheck extends IntentService {
                 + ((val >>> DELETE_MASK) & RIGHT_MASK)) * 1.5;
     }
 
-    private static int editDistance(String word1, String word2) {
-        // space saving optimization
-        if (word1.length() > word2.length()) {
-            String temp = word2;
-            word2 = word1;
-            word1 = temp;
-        }
-        int[][] dp = new int[2][1 + word1.length()];
-        for (int i = 0; i < 1 + word1.length(); ++i)
-            dp[0][i] = i;
+    static class LongSet {
+        private final long[] data;
+        private final int MASK;
+        private final int SHIFT;
 
-        for (int i = 1; i < 1 + word2.length(); ++i) {
-            for (int j = 1; j < 1 + word1.length(); ++j) {
-                if (word2.charAt(i - 1) == word1.charAt(j - 1)) {
-                    dp[1][j] = dp[0][j - 1];
-                } else {
-                    dp[1][j] = 1 + Math.min(dp[0][j - 1], Math.min(dp[0][j], dp[1][j - 1]));
-                }
+        public LongSet(int N) {
+            data = new long[N];
+            MASK = N;
+            SHIFT = Integer.numberOfTrailingZeros(N+1);
+        }
+
+        public void insert(final long val) {
+            int iter;
+            iter = (int) adjustIndex(val);
+            int skip = 0;
+            while ((data[iter]) != 0L) {
+                iter += ++skip*skip;
+                iter = (iter+1 >>> SHIFT) + (iter+1 & MASK) - 1;
             }
-
-            dp[0] = dp[1];
-            dp[1] = new int[1 + word1.length()];
-            dp[1][0] = i;
+            data[iter] = val;
         }
 
-        return dp[0][word1.length()];
+        public boolean contains(final long val) {
+            int iter = (int) adjustIndex(val);
+            int skip = 0;
+            while(data[iter] != 0L) {
+                if(data[iter] == val) return true;
+                iter += ++skip*skip;
+                iter = (iter+1 >>> SHIFT) + (iter+1 & MASK) - 1;
+            }
+            return false;
+        }
+
+        private final long adjustIndex(long val) {
+            long hash = val % data.length;
+            return hash < 0 ? hash + data.length : hash;
+        }
     }
 }

@@ -43,9 +43,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <service android:name=".CalibrateHelp"
-            android:enabled="true"
-            android:exported="false"/>
         <service
             android:name=".SpellCheck"
             android:exported="false" />
