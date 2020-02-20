@@ -4,6 +4,7 @@
 
 package com.apps.navai;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -58,6 +59,25 @@ public class MainActivity extends AppCompatActivity {
     private float[] rotMat2;
     private float focusDist1;
     private float focusDist2;
+    private PhotoUtils.PolarVector vect;
+
+    @SuppressLint("DefaultLocale")
+    private String genMsg(PhotoUtils.PolarVector vect) {
+        int angle = (int) (6*vect.getDir()/Math.PI);
+        if(angle < 0) {
+            if (angle == 0) {
+                return "Straight forward:";
+            } else {
+                return String.format("%d o'clock", angle);
+            }
+        } else {
+            if (angle == 0) {
+                return "Straight forward:";
+            } else {
+                return String.format("%d o'clock", 12 - angle);
+            }
+        }
+    }
 
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
@@ -146,13 +166,19 @@ public class MainActivity extends AppCompatActivity {
                         Annotation frame2 = session.getAnnotationSecond(0);
 
                         CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-                        PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, focusDist1,
+                        vect = PhotoUtils.calcTrajectory(ref, focusDist1,
                                 focusDist2, frame1, frame2, rotMat, rotMat2);
                         System.out.println(vect);
+                        next = new Intent(getApplicationContext(), Speak.class);
+                        next.putExtra(STRING_1, genMsg(vect));
+                        next.putExtra(INT_1, 11);
+                        startService(next);
+                    case 11:
                         next = new Intent(getApplicationContext(), Navigate.class);
                         next.putExtra(VECTOR_1, vect);
-                        startActivityForResult(next, 11);
-                        break;
+                        startActivityForResult(next, 12);
+                    case 12:
+                        System.out.println("We're done!");
                     default:
                         System.err.println("Error code: " + code);
                         System.err.println("Process id not recognized.");
@@ -183,12 +209,13 @@ public class MainActivity extends AppCompatActivity {
         photoPath2 = st == null ? null : st.getString("photo-path-2");
         focusDist1 = st == null ? -1f : st.getFloat("focus-dist-1", focusDist1);
         focusDist2 = st == null ? -1f : st.getFloat("focus-dist-2", focusDist2);
+        vect = (PhotoUtils.PolarVector) (st == null ? null : st.getSerializable("vector"));
 
         LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(
                 receiver, new IntentFilter(SERVICE_RESPONSE));
 
         Intent arduino = new Intent(getApplicationContext(), ArduinoInterface.class);
-        arduino.putExtra(INT_1, 12);
+        arduino.putExtra(INT_1, 13);
         if(first) startService(arduino);
 
         Intent start = new Intent(getApplicationContext(), Speak.class);
@@ -247,6 +274,7 @@ public class MainActivity extends AppCompatActivity {
         b.putFloatArray("rot-mat-2", rotMat2);
         b.putFloat("focus-dist-1", focusDist1);
         b.putFloat("focus-dist-2", focusDist2);
+        b.putSerializable("vector", vect);
     }
 
     @Override

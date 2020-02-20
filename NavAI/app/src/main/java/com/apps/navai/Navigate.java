@@ -47,6 +47,7 @@ public class Navigate extends AppCompatActivity {
                     Intent speak = new Intent(getApplicationContext(), Speak.class);
                     speak.putExtra(MainActivity.STRING_1,"You have arrived.");
                     speak.putExtra(MainActivity.INT_1, 0);
+                    startService(speak);
                     return;
                 }
                 double dot = (xComp*Xbear+yComp*Ybear)/Math.sqrt(xComp*xComp+yComp*yComp);
