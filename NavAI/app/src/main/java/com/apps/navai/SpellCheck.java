@@ -265,6 +265,17 @@ public class SpellCheck extends IntentService {
             data[ptr++] = dat;
         }
 
+        void add(int pos, float dat) {
+            if(ptr == data.length) {
+                float[] aux = new float[ptr << 1];
+                System.arraycopy(data, 0, aux, 0, ptr);
+                data = aux;
+            }
+            System.arraycopy(data, pos, data, pos+1, ptr-pos);
+            data[pos] = dat;
+            ++ptr;
+        }
+
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
@@ -305,6 +316,14 @@ public class SpellCheck extends IntentService {
         String[] data = intent.getStringArrayExtra(MainActivity.STRING_ARRAY_1);
         String input = join(data);
         input = input.replaceAll("[^\\x00-\\x7F]+", "");
+        String[] tabDelimited = input.split("\t");
+        ArrayList<Integer> spacePositions = new ArrayList<>();
+        for(int i = 0; i<tabDelimited.length; ++i) {
+            if(tabDelimited[i].matches("\\s+"))
+                spacePositions.add(i);
+        }
+
+        System.out.println(input);
         TextRazor textRazor = new TextRazor(getString(R.string.textrazor_key));
         textRazor.setExtractors(Arrays.asList("spelling"));
 
@@ -341,7 +360,13 @@ public class SpellCheck extends IntentService {
                 conf.add((float) minDist);
                 output.add(curr);
                 output.add(opt);
+
+                for(int pos: spacePositions) {
+                    output.add(pos, "");
+                    conf.add(pos, 0f);
+                }
             }
+
         } catch (NetworkException | AnalysisException e) {
             System.err.println(e.getMessage());
         } finally {
@@ -366,7 +391,7 @@ public class SpellCheck extends IntentService {
         for (String s : data) {
             flag = true;
             sb.append(s);
-            sb.append('\\'); sb.append('\t');
+            sb.append('\t');
         }
         if(flag) {
             sb.deleteCharAt(sb.length() - 1);

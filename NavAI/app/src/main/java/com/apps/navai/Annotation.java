@@ -75,18 +75,27 @@ public class Annotation implements Serializable,Comparable<Annotation> {
 
     public static String join(String[] data) {
         StringBuilder sb = new StringBuilder();
+        boolean ran = false;
         for (String s : data) {
+            ran = true;
             sb.append(s);
             sb.append('\\'); sb.append('t');
         }
 
-        return sb.toString().trim();
+        String out;
+        if(ran) {
+            out = sb.substring(0, sb.length()-2).trim();
+        } else {
+            out = sb.toString().trim();
+        }
+        System.out.println("JOIN: " + Arrays.toString(data) + " " + out);
+        return out;
     }
 
     public Annotation(FirebaseVisionText.TextBlock p) {
         rect = p.getBoundingBox();
         tag = 't';
-        conf = p.getConfidence() != null ? p.getConfidence() : -1;
+        conf = p.getConfidence() != null ? p.getConfidence() : 1f;
         descr = p.getText().replaceAll("\\s+", " ");
     }
 
@@ -137,6 +146,8 @@ public class Annotation implements Serializable,Comparable<Annotation> {
         double locScore;
         int optIndex = 0;
         for(int i = s; i<e; ++i) {
+            if(vals[i] == 1.0E9)
+                continue;
             locScore = extra[i-s]*vals[i];
             if(optScore < locScore) {
                 optScore = locScore;
@@ -145,14 +156,9 @@ public class Annotation implements Serializable,Comparable<Annotation> {
             score += extra[i-s]*vals[i];
         }
 
-        StringTokenizer tokenizer = new StringTokenizer(descr, "\\t");
-        int ctr = 0;
-        while(ctr < optIndex && tokenizer.hasMoreTokens()) {
-            tokenizer.nextToken();
-            ++ctr;
-        }
-
-        descr = tokenizer.nextToken();
+        String[] tokens = descr.split("\\Q\\t\\E");
+        System.out.printf("OptIndex: %d, String array: %s%n", optIndex, Arrays.toString(tokens));
+        descr = tokens[optIndex];
         score /= (e-s);
         conf *= score;
     }

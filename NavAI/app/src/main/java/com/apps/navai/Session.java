@@ -83,17 +83,28 @@ public class Session implements java.io.Serializable {
 
     public String[] getDescrArray(int callNum) {
         Annotation[] annotations = callNum == 0 ? annotationsOne : annotationsTwo;
-        String[] input = Arrays.stream(annotations)
-                .map(Annotation::getDescription).toArray(String[]::new);
+        int ptr = 0;
+        while(ptr < annotations.length && annotations[ptr].getRTag() == Annotation.OBJECT_TAG) {
+            ++ptr;
+        }
+        String[] input = new String[annotations.length-ptr];
+        for(int i = ptr; i<annotations.length; ++i) {
+            input[i-ptr] = annotations[i].getDescription();
+        }
         return input;
     }
 
     public void setOutput(int callNum, ArrayList<String> strings, SpellCheck.FloatVector floats) {
+        System.out.println("OUTPUT STRINGS: " + strings);
         Annotation[] annotations = callNum == 0 ? annotationsOne : annotationsTwo;
-        for(int i = 0; i<annotations.length; ++i) {
+        int ptr = 0;
+        while(ptr < annotations.length && annotations[ptr].getRTag() == Annotation.OBJECT_TAG) {
+            ++ptr;
+        }
+        for(int i = ptr; i<annotations.length; ++i) {
             annotations[i].updateDescr(String.format("%s\\t%s",
-                    strings.get(i<<1), strings.get(1+(i<<1))));
-            annotations[i].multConf(floats.get(i) > 1f ? 1f : floats.get(i));
+                    strings.get(i-ptr<<1), strings.get(1+(i-ptr<<1))));
+            annotations[i].multConf(floats.get(i-ptr) > 1f ? 1f : floats.get(i-ptr));
         }
     }
 
@@ -168,6 +179,14 @@ public class Session implements java.io.Serializable {
             a.updateDescr(a.getDescription().toLowerCase());
         for(Annotation a: annotationsTwo)
             a.updateDescr(a.getDescription().toLowerCase());
+    }
+
+    public void sortFirst(Comparator<Annotation> comparator) {
+        Arrays.sort(annotationsOne, comparator);
+    }
+
+    public void sortSecond(Comparator<Annotation> comparator) {
+        Arrays.sort(annotationsTwo, comparator);
     }
 
     public void display() {

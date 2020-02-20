@@ -23,15 +23,14 @@ public class Converge extends IntentService {
 
     private Session session;
     private String keyword;
-    private static final int NUM_ANNOT = 1;
     private int id;
 
     private int numObjScores;
     private int numTxtScores;
     private int numObjects;
 
-    private static final int EPS_X = CustomCamera.CAMERA_WIDTH/100;
-    private static final int EPS_Y = CustomCamera.CAMERA_HEIGHT/100;
+    private static final int EPS_X = CustomCamera.CAMERA_WIDTH/4;
+    private static final int EPS_Y = CustomCamera.CAMERA_HEIGHT/4;
 
     public Converge() {
         super("Converge");
@@ -42,6 +41,8 @@ public class Converge extends IntentService {
         id = intent.getIntExtra(INT_1,-1);
         keyword = intent.getStringExtra(STRING_1);
         session = (Session) intent.getSerializableExtra(STRING_2);
+        System.out.println("Convergence input:");
+        session.display();
         converge();
     }
 
@@ -56,6 +57,8 @@ public class Converge extends IntentService {
     }
 
     private void identifyPair() {
+        System.out.println("FOR REAL:");
+        session.display();
         URL url;
         HttpURLConnection con;
         try {
@@ -138,6 +141,7 @@ public class Converge extends IntentService {
                 ++ptr;
             }
 
+            System.out.println("CONVERGED ANNOTATIONS: " + a1 + " " + a2);
             Annotation[] annot1 = {a1};
             Annotation[] annot2 = {a2};
             session.setAnnotationsOne(annot1);
@@ -156,20 +160,23 @@ public class Converge extends IntentService {
 
     private String formatDescriptions(int id) {
         StringBuilder sb = new StringBuilder();
+        boolean run = false;
         if(id == 0) {
             final int size = session.sizeOne();
             for(int i = 0; i<size; ++i) {
+                run = true;
                 sb.append(session.getAnnotationFirst(i).getDescription());
                 sb.append('\\'); sb.append('t');
             }
         } else {
             final int size = session.sizeTwo();
             for(int i = 0; i<size; ++i) {
+                run = true;
                 sb.append(session.getAnnotationSecond(i).getDescription());
                 sb.append('\\'); sb.append('t');
             }
         }
-        return sb.length() > 1 ? sb.substring(0, sb.length()-2).trim() : sb.toString().trim();
+        return run ? sb.substring(0, sb.length()-2).trim() : sb.toString();
     }
 
     private void convergeScores(int id, float[] f) {
@@ -182,6 +189,9 @@ public class Converge extends IntentService {
             annotation.dotScores(f, ptr, ptr+ct);
             ptr += ct;
         }
+
+        System.out.println("AFTER DOT SCORES!");
+        session.display();
 
         for(int i = numObjects; i<(id == 0 ? session.sizeOne() : session.sizeTwo()); ++i) {
             Annotation annotation = id == 0 ?
@@ -228,14 +238,14 @@ public class Converge extends IntentService {
             } else {
                 while(ptr < session.sizeTwo() &&
                         session.getAnnotationSecond(ptr).getRTag()==Annotation.OBJECT_TAG) {
-                    numObjScores += session.getAnnotationFirst(ptr).getExtraCount();
+                    numObjScores += session.getAnnotationSecond(ptr).getExtraCount();
                     ++ptr;
                 }
 
             }
             numObjects = ptr;
             String str = String.format("{\"qs\":\"%s\", \"obj\":\"%s\", \"txt\":\"%s\"}",
-                    keyword, objString(session, ptr, id), txtString(session, ptr, id));
+                    keyword.toLowerCase(), objString(session, ptr, id), txtString(session, ptr, id));
             byte[] write = str.getBytes(StandardCharsets.UTF_8);
             os.write(write);
             os.flush();
@@ -273,7 +283,7 @@ public class Converge extends IntentService {
                 sb.append(a.getExtraCount()); sb.append('\\'); sb.append('t');
                 sb.append(a.getDescription().toLowerCase().trim()); sb.append('\\'); sb.append('t');
             }
-            return sb.toString().trim();
+            return sb.substring(0, sb.length()-2).trim();
         } else {
             sb.append(stop); sb.append('\\'); sb.append('t');
             for (int i = 0; i<stop; ++i) {
@@ -282,7 +292,7 @@ public class Converge extends IntentService {
                 sb.append(a.getExtraCount()); sb.append('\\'); sb.append('t');
                 sb.append(a.getDescription().toLowerCase().trim()); sb.append('\\'); sb.append('t');
             }
-            return sb.toString().trim();
+            return sb.substring(0, sb.length()-2).trim();
         }
     }
 
@@ -296,14 +306,17 @@ public class Converge extends IntentService {
                 String s = session.getAnnotationFirst(i).getDescription();
                 final int tabIdx = s.indexOf("\\t");
                 String orig = s.substring(0, tabIdx).toLowerCase().trim();
-                String corr = s.substring(tabIdx).toLowerCase().trim();
-                if(orig.indexOf(' ') != -1 && corr.indexOf(' ') == -1) {
+                String corr = s.substring(tabIdx+2).toLowerCase().trim();
+                System.out.printf("TEXT CORR: orig: %s, corr: %s%n", orig, corr);
+
+                if(orig.indexOf(' ') == -1 && corr.indexOf(' ') != -1) {
                     s = String.format("%s\\t%s", orig, corr = SpellCheck.findSpaces(corr));
                     String res;
                     if((res = SpellCheck.condenseSpaces(corr)).equals(corr)) {
                         s = String.format("%s\\t%s", orig, res);
                     }
                 }
+
                 sb.append(s.toLowerCase().trim());
                 numTxtScores += 2;
                 sb.append('\\'); sb.append('t');
@@ -326,7 +339,7 @@ public class Converge extends IntentService {
             }
             SpellCheck.freeDict();
         }
-        return sb.toString().trim();
+        return sb.substring(0, sb.length()-2).trim();
     }
 
     private float[] readFloatArray(int N, InputStream instr) throws IOException {

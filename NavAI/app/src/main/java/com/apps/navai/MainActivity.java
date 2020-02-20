@@ -95,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
                     case 6:
                         System.out.println("Arrived at case 6");
                         session = (Session) intent.getSerializableExtra("session");
+                        session.sortFirst((a1,a2)->a1.getRTag()-a2.getRTag());
                         System.out.println(session);
                         next = new Intent(getApplicationContext(), CallAPI.class);
                         next.putExtra(STRING_1, photoPath2);
@@ -106,8 +107,10 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case 7:
                         session2 = (Session) intent.getSerializableExtra("session");
+                        session2.sortSecond((a1,a2)->a1.getRTag()-a2.getRTag());
                         next = new Intent(getApplicationContext(), SpellCheck.class);
                         String[] input = session.getDescrArray(0);
+                        System.out.println("INPUT ARRAY 0: " + Arrays.toString(input));
                         next.putExtra(INT_1, 8);
                         next.putExtra(STRING_ARRAY_1, input);
                         startService(next);
@@ -119,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
                         session.setOutput(0, output, conf);
                         next = new Intent(getApplicationContext(), SpellCheck.class);
                         input = session2.getDescrArray(1);
+                        System.out.println("INPUT ARRAY 0: " + Arrays.toString(input));
                         next.putExtra(INT_1, 9);
                         next.putExtra(STRING_ARRAY_1, input);
                         startService(next);
@@ -144,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
                         CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
                         PhotoUtils.PolarVector vect = PhotoUtils.calcTrajectory(ref, focusDist1,
                                 focusDist2, frame1, frame2, rotMat, rotMat2);
+                        System.out.println(vect);
                         next = new Intent(getApplicationContext(), Navigate.class);
                         next.putExtra(VECTOR_1, vect);
                         startActivityForResult(next, 11);
