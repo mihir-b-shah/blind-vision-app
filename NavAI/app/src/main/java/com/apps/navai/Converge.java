@@ -218,6 +218,10 @@ public class Converge extends IntentService {
     }
 
     private float[] genScores(Session session, int id) {
+        numObjScores = 0;
+        numTxtScores = 0;
+        numObjects = 0;
+
         URL url;
         HttpURLConnection con;
         try {
@@ -335,6 +339,7 @@ public class Converge extends IntentService {
                     s = String.format("%s %s", orig, SpellCheck.findSpaces(corr));
                 }
                 sb.append(s);
+                numTxtScores += 2;
                 sb.append('\\'); sb.append('t');
             }
             SpellCheck.freeDict();
@@ -343,6 +348,7 @@ public class Converge extends IntentService {
     }
 
     private float[] readFloatArray(int N, InputStream instr) throws IOException {
+        System.out.println("N: " + N);
         byte buf;
         float[] floats = new float[N];
         int ctr = 0;

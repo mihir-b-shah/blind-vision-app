@@ -43,6 +43,12 @@ public class Navigate extends AppCompatActivity {
 
                 X = Xloc; Y = Yloc;
                 double xComp = tgtX-X; double yComp = tgtY-Y;
+                if(Math.sqrt(xComp*xComp+yComp*yComp)<0.5) {
+                    Intent speak = new Intent(getApplicationContext(), Speak.class);
+                    speak.putExtra(MainActivity.STRING_1,"You have arrived.");
+                    speak.putExtra(MainActivity.INT_1, 0);
+                    return;
+                }
                 double dot = (xComp*Xbear+yComp*Ybear)/Math.sqrt(xComp*xComp+yComp*yComp);
                 if(Math.abs(Math.acos(dot)) > Math.PI/6) {
                     beep.start();
