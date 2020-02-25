@@ -122,11 +122,11 @@ public class PhotoUtils {
     }
 
     private static double getVerticalAngle(double normVertical, double fd) {
-        return atan(normVertical*size.getHeight()/(focLength*(fd < 0 ? 1 : fd+1)));
+        return atan(2*normVertical*size.getHeight()/(focLength*(fd < 0 ? 1 : fd+1)));
     }
 
     private static double getHorizontalAngle(double normHorizontal, double fd) {
-        return atan(normHorizontal*size.getWidth()/(focLength*(fd < 0 ? 1 : fd+1)));
+        return atan(2*normHorizontal*size.getWidth()/(focLength*(fd < 0 ? 1 : fd+1)));
     }
 
     private static void correct(Annotation annot) {
