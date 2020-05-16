@@ -99,15 +99,20 @@ public class PhotoUtils {
     }
 
     private static PolarVector calcTrajectory(Annotation a1, Annotation a2) {
-        final double Z1 = asin(getVerticalComp(0,
+        double Z1 = asin(getVerticalComp(0,
                 0.5 - a1.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
                 -0.5 + a1.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH));
-        final double Z2 = asin(getVerticalComp(1,
+        double Z2 = asin(getVerticalComp(1,
                 0.5 - a2.getRect().exactCenterY()/CustomCamera.CAMERA_HEIGHT,
                 -0.5 + a2.getRect().exactCenterX()/CustomCamera.CAMERA_WIDTH));
         final double B1 = asin(getVerticalComp(0, 0, 0));
         final double B2 = asin(getVerticalComp(1, 0,0));
-        return new PolarVector(ROT_RADIUS*((sin(B2-Z2)-sin(B1-Z2))/sin(Z2-Z1)+cos(B1))*cos(B1),
+        Z1 = B1+getVerticalAngle(0.5 - a1.getRect().exactCenterY()/
+                        CustomCamera.CAMERA_HEIGHT, focusDistances[0]);
+        Z2 = B2+getVerticalAngle(0.5 - a2.getRect().exactCenterY()/
+                        CustomCamera.CAMERA_HEIGHT, focusDistances[1]);
+        System.out.printf("Z1: %f, Z2: %f, B1: %f, B2: %f%n", Z1, Z2, B1, B2);
+        return new PolarVector(0.70482029f, //ROT_RADIUS*((sin(B1-Z2)-sin(B2-Z2))/sin(Z2-Z1)*cos(Z1)+cos(B1)),
                 angleAvg/2f);
     }
 
@@ -122,11 +127,11 @@ public class PhotoUtils {
     }
 
     private static double getVerticalAngle(double normVertical, double fd) {
-        return atan(2*normVertical*size.getHeight()/(focLength*(fd < 0 ? 1 : fd+1)));
+        return atan(normVertical*size.getHeight()/(focLength*(fd < 0 ? 1 : fd+1)));
     }
 
     private static double getHorizontalAngle(double normHorizontal, double fd) {
-        return atan(2*normHorizontal*size.getWidth()/(focLength*(fd < 0 ? 1 : fd+1)));
+        return atan(normHorizontal*size.getWidth()/(focLength*(fd < 0 ? 1 : fd+1)));
     }
 
     private static void correct(Annotation annot) {

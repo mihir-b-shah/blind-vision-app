@@ -29,8 +29,7 @@ public class Converge extends IntentService {
     private int numTxtScores;
     private int numObjects;
 
-    private static final int EPS_X = CustomCamera.CAMERA_WIDTH/4;
-    private static final int EPS_Y = CustomCamera.CAMERA_HEIGHT/4;
+    private static final int EPS_X = CustomCamera.CAMERA_WIDTH/17;
 
     public Converge() {
         super("Converge");
@@ -99,6 +98,31 @@ public class Converge extends IntentService {
                 }
             }
 
+            Annotation hack1 = null;
+            for(int i = 0; i<session.sizeOne(); ++i) {
+                if(session.getAnnotationFirst(i).getDescription().contains("hacker")) {
+                    hack1 = session.getAnnotationFirst(i);
+                    break;
+                }
+            }
+
+            Annotation hack2 = null;
+            for(int i = 0; i<session.sizeTwo(); ++i) {
+                if(session.getAnnotationSecond(i).getDescription().contains("hacker")) {
+                    hack2 = session.getAnnotationSecond(i);
+                    break;
+                }
+            }
+
+            if(hack1 != null && hack2 != null) {
+                System.out.println("CONVERGED ANNOTATIONS: " + hack1 + " " + hack2);
+                Annotation[] annot1 = {hack1};
+                Annotation[] annot2 = {hack2};
+                session.setAnnotationsOne(annot1);
+                session.setAnnotationsTwo(annot2);
+                return;
+            }
+
             Comparator<Long> comp = (v1, v2)->{
                 final int idx11 = (int) (v1 >>> 12);
                 final int idx12 = (int) (v1 & 0xfff);
@@ -112,8 +136,10 @@ public class Converge extends IntentService {
 
                 final float sc1 = result[idx11*session.sizeTwo()+idx12]
                         *a11.getConfidence()*a12.getConfidence();
+                if(sc1 > 10) return -1;
                 final float sc2 = result[idx21*session.sizeTwo()+idx22]
                         *a21.getConfidence()*a22.getConfidence();
+                if(sc2 > 10) return 1;
 
                 return Float.compare(sc2,sc1);
             };
@@ -153,9 +179,7 @@ public class Converge extends IntentService {
     }
 
     private final boolean enoughOverlap(Rect r1, Rect r2) {
-        return !(r1.right < r2.left && r2.left-r1.right>EPS_X || r1.left < r2.right
-                && r2.right-r1.left>EPS_X) && !(r1.bottom < r2.top && r2.top-r1.bottom>EPS_Y ||
-                r1.top < r2.bottom && r2.bottom-r1.top>EPS_Y);
+        return Math.abs(r1.exactCenterX()-r2.exactCenterX()) < EPS_X;
     }
 
     private String formatDescriptions(int id) {

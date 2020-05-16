@@ -9,8 +9,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.os.Bundle;
+import android.util.SizeF;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -168,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
                         CameraManager ref = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
                         vect = PhotoUtils.calcTrajectory(ref, focusDist1,
                                 focusDist2, frame1, frame2, rotMat, rotMat2);
-                        System.out.println(vect);
+                        System.out.println(vect.getMgn() + " " + vect.getDir());
                         next = new Intent(getApplicationContext(), Speak.class);
                         next.putExtra(STRING_1, genMsg(vect));
                         next.putExtra(INT_1, 11);
