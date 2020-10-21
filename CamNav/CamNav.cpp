@@ -8,7 +8,7 @@ int main(int argc, char** argv )
 {
     if ( argc != 2 )
     {
-        printf("usage: DisplayImage.out <Image_Path>\n");
+        printf("usage: CamNav.out <Image_Path>\n");
         return -1;
     }
     Mat image;
@@ -18,8 +18,8 @@ int main(int argc, char** argv )
         printf("No image data \n");
         return -1;
     }
-    namedWindow("Display Image", WINDOW_AUTOSIZE );
-    imshow("Display Image", image);
+    namedWindow("CamNav", WINDOW_AUTOSIZE );
+    imshow("CamNav", image);
     waitKey(0);
     return 0;
 }
